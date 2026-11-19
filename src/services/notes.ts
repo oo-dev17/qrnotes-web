@@ -1,0 +1,295 @@
+import type { DocumentReference } from 'firebase-admin/firestore';
+import { bucket, db } from '../firebase.js';
+import { fingerprint, listFingerprint } from './fingerprint.js';
+
+export interface NoteSummary {
+  id: string;
+  title: string;
+  documentId: string;
+  qrCode: string;
+  creationDate: number;
+  thumbUrl: string | null;
+  fp: string; // Fingerprint der Firestore-Felder (siehe fingerprint.ts)
+}
+
+export interface StoredFile {
+  name: string;
+  url: string;
+  timeCreated: number;
+}
+
+export interface NoteDetail {
+  id: string;
+  title: string;
+  content: string;
+  qrCode: string;
+  images: StoredFile[]; // nach Aufnahmezeit, älteste zuerst
+  documents: StoredFile[];
+  coverName: string | null; // galleryPic, sonst das älteste Bild
+  staleCover: string | null; // galleryPic, dessen Datei fehlt (Verweis ist kaputt)
+  fingerprint: string; // Firestore-Felder der Notiz (siehe fingerprint.ts)
+  hasSketch: boolean; // {docId}/Sketch/sketch.json vorhanden
+  hasSketchPreview: boolean; // {docId}/Sketch/preview.png vorhanden
+}
+
+export class NoteNotFoundError extends Error {
+  constructor() {
+    super('Notiz nicht gefunden');
+  }
+}
+
+const LIST_TTL_MS = 5 * 60 * 1000;
+const DETAIL_TTL_MS = 5 * 60 * 1000;
+const SIGNED_URL_TTL_MS = 60 * 60 * 1000; // 1 h
+const IGNORED_DOC_IDS = new Set(['allDocuments']);
+const VALID_ID = /^[A-Za-z0-9_-]{1,128}$/;
+
+interface Cached<T> {
+  loadedAt: number;
+  value: T;
+}
+
+// Pro Nutzer: Liste (für Suche) und pro Notiz: Detail. Änderungen invalidieren über invalidateNote().
+const listCache = new Map<string, Cached<NoteSummary[]>>();
+const detailCache = new Map<string, Cached<NoteDetail>>();
+
+export function notesCollection(uid: string) {
+  return db.collection('users').doc(uid).collection('qrNotes');
+}
+
+// Prüft Existenz und Besitz (Pfad enthält die uid). Nur danach darf auf Storage zugegriffen werden.
+export async function requireNoteRef(uid: string, id: string): Promise<DocumentReference> {
+  if (!VALID_ID.test(id)) throw new NoteNotFoundError();
+  const ref = notesCollection(uid).doc(id);
+  const snap = await ref.get();
+  if (!snap.exists) throw new NoteNotFoundError();
+  return ref;
+}
+
+export function invalidateNote(uid: string, id: string): void {
+  listCache.delete(uid);
+  detailCache.delete(`${uid}/${id}`);
+}
+
+type StorageFile = ReturnType<typeof bucket.file>;
+
+function timeOf(file: { metadata?: { timeCreated?: string } }): number {
+  const t = file.metadata?.timeCreated;
+  return t ? Date.parse(t) : 0;
+}
+
+async function listImages(id: string): Promise<StorageFile[]> {
+  const [files] = await bucket.getFiles({ prefix: `${id}/Images/` });
+  return files.filter((f) => !f.name.endsWith('/'));
+}
+
+async function signedUrl(file: StorageFile): Promise<string> {
+  const [url] = await file.getSignedUrl({
+    version: 'v4',
+    action: 'read',
+    expires: Date.now() + SIGNED_URL_TTL_MS,
+  });
+  return url;
+}
+
+// Liste: galleryPic, wenn die Datei existiert; sonst das älteste Bild (wie auf der Detailseite).
+// Liefert die App-eigene Thumbnail-Route (gecacht im Browser und in Storage), keine Vollbild-URL.
+async function listThumbUrl(id: string, galleryPic: string): Promise<string | null> {
+  const images = await listImages(id);
+  if (images.length === 0) return null;
+  const cover = images.find((f) => f.name === `${id}/Images/${galleryPic}`)
+    ?? images.reduce((a, b) => (timeOf(b) < timeOf(a) ? b : a));
+  const name = cover.name.slice(`${id}/Images/`.length);
+  return `/notes/${encodeURIComponent(id)}/thumb/${encodeURIComponent(name)}`;
+}
+
+async function loadNotes(uid: string): Promise<NoteSummary[]> {
+  const snapshot = await notesCollection(uid)
+    .select('title', 'content', 'documentId', 'qrCode', 'galleryPic', 'creationDate')
+    .get();
+
+  const notes = await Promise.all(
+    snapshot.docs
+      .filter((doc) => !IGNORED_DOC_IDS.has(doc.id))
+      .map(async (doc): Promise<NoteSummary> => {
+        const data = doc.data();
+        const galleryPic = typeof data.galleryPic === 'string' ? data.galleryPic : '';
+        return {
+          id: doc.id,
+          title: typeof data.title === 'string' ? data.title : '',
+          // Fehlt documentId, zeigt die Android-App die Dokument-ID; so auch hier.
+          documentId: typeof data.documentId === 'string' && data.documentId ? data.documentId : doc.id,
+          qrCode: typeof data.qrCode === 'string' ? data.qrCode : '',
+          creationDate: typeof data.creationDate === 'number' ? data.creationDate : 0,
+          thumbUrl: await listThumbUrl(doc.id, galleryPic),
+          fp: fingerprint(data),
+        };
+      }),
+  );
+
+  return notes.sort((a, b) => b.creationDate - a.creationDate);
+}
+
+async function getAllNotes(uid: string): Promise<NoteSummary[]> {
+  const cached = listCache.get(uid);
+  if (cached && Date.now() - cached.loadedAt < LIST_TTL_MS) {
+    return cached.value;
+  }
+  const notes = await loadNotes(uid);
+  listCache.set(uid, { loadedAt: Date.now(), value: notes });
+  return notes;
+}
+
+export const SORT_ORDERS = ['date-desc', 'date-asc', 'name-asc'] as const;
+export type SortOrder = (typeof SORT_ORDERS)[number];
+
+export function parseSort(value: unknown): SortOrder {
+  return (SORT_ORDERS as readonly string[]).includes(value as string)
+    ? (value as SortOrder)
+    : 'date-desc';
+}
+
+function sortNotes(notes: NoteSummary[], sort: SortOrder): NoteSummary[] {
+  const copy = [...notes];
+  switch (sort) {
+    case 'date-asc':
+      return copy.sort((a, b) => a.creationDate - b.creationDate);
+    case 'name-asc':
+      // Ohne Titel ans Ende.
+      return copy.sort((a, b) => {
+        if (!a.title !== !b.title) return a.title ? -1 : 1;
+        return a.title.localeCompare(b.title, 'de', { sensitivity: 'base' });
+      });
+    case 'date-desc':
+    default:
+      return copy.sort((a, b) => b.creationDate - a.creationDate);
+  }
+}
+
+// Filtert über Titel, documentId und qrCode (ohne Groß-/Kleinschreibung) und sortiert danach.
+export async function searchNotes(
+  uid: string,
+  query: string,
+  sort: SortOrder = 'date-desc',
+): Promise<NoteSummary[]> {
+  const notes = await getAllNotes(uid);
+  const q = query.trim().toLowerCase();
+  const matches = q
+    ? notes.filter(
+        (n) =>
+          n.title.toLowerCase().includes(q) ||
+          n.documentId.toLowerCase().includes(q) ||
+          n.qrCode.toLowerCase().includes(q),
+      )
+    : notes;
+  return sortNotes(matches, sort);
+}
+
+// Fingerprint der gesamten Liste (alle Notizen, unabhängig von der Suche).
+export async function listFingerprintFor(uid: string): Promise<string> {
+  const notes = await getAllNotes(uid);
+  return listFingerprint(notes.map((n) => [n.id, n.fp]));
+}
+
+// Dateien einer Notiz als Schlüssel („I/name“ = Bild, „D/name“ = PDF), für den Live-Vergleich.
+export function fileKeys(
+  images: { name: string }[],
+  documents: { name: string }[],
+  hasSketch: boolean,
+): string[] {
+  const keys = [...images.map((i) => `I/${i.name}`), ...documents.map((d) => `D/${d.name}`)];
+  if (hasSketch) keys.push('S/sketch.json');
+  return keys.sort();
+}
+
+// Liest die Dateien direkt aus Storage (ohne Cache). Nur nach Besitzprüfung aufrufen.
+export async function listFileKeys(id: string): Promise<string[]> {
+  const [images] = await bucket.getFiles({ prefix: `${id}/Images/` });
+  const [documents] = await bucket.getFiles({ prefix: `${id}/Documents/` });
+  const [sketch] = await bucket.file(`${id}/Sketch/sketch.json`).exists();
+  return fileKeys(
+    images
+      .filter((f) => !f.name.endsWith('/'))
+      .map((f) => ({ name: f.name.slice(`${id}/Images/`.length) })),
+    documents
+      .filter((f) => !f.name.endsWith('/'))
+      .map((f) => ({ name: f.name.slice(`${id}/Documents/`.length) })),
+    sketch,
+  );
+}
+
+// Exakter Treffer auf qrCode (für den Scanner). Bei mehreren Treffern gewinnt die neueste Notiz.
+export async function findNoteByQrCode(
+  uid: string,
+  code: string,
+  exceptId?: string,
+): Promise<NoteSummary | null> {
+  const value = code.trim();
+  if (!value) return null;
+  const notes = await getAllNotes(uid);
+  return notes.find((n) => n.qrCode === value && n.id !== exceptId) ?? null;
+}
+
+async function listDocuments(id: string): Promise<StoredFile[]> {
+  const prefix = `${id}/Documents/`;
+  const [files] = await bucket.getFiles({ prefix });
+  return Promise.all(
+    files
+      .filter((f) => !f.name.endsWith('/'))
+      .map(async (file) => ({
+        name: file.name.slice(prefix.length),
+        url: await signedUrl(file),
+        timeCreated: timeOf(file),
+      })),
+  );
+}
+
+// Detailseite. Gecacht; die Existenzprüfung läuft beim Laden, Schreibzugriffe invalidieren den Eintrag.
+export async function getNoteDetail(uid: string, id: string): Promise<NoteDetail | null> {
+  if (!VALID_ID.test(id)) return null;
+  const key = `${uid}/${id}`;
+  const cached = detailCache.get(key);
+  if (cached && Date.now() - cached.loadedAt < DETAIL_TTL_MS) {
+    return cached.value;
+  }
+
+  const snap = await notesCollection(uid).doc(id).get();
+  if (!snap.exists) return null;
+  const data = snap.data()!;
+  const galleryPic = typeof data.galleryPic === 'string' ? data.galleryPic : '';
+
+  // Storage erst nach der Existenzprüfung oben.
+  const imageFiles = await listImages(id);
+  const images: StoredFile[] = await Promise.all(
+    imageFiles.map(async (file) => ({
+      name: file.name.slice(`${id}/Images/`.length),
+      url: await signedUrl(file),
+      timeCreated: timeOf(file),
+    })),
+  );
+  images.sort((a, b) => a.timeCreated - b.timeCreated);
+
+  const documents = (await listDocuments(id)).sort((a, b) => a.name.localeCompare(b.name));
+  const [hasSketch] = await bucket.file(`${id}/Sketch/sketch.json`).exists();
+  const [hasSketchPreview] = await bucket.file(`${id}/Sketch/preview.png`).exists();
+
+  const galleryExists = images.some((i) => i.name === galleryPic);
+  const coverName = galleryExists ? galleryPic : (images[0]?.name ?? null);
+  const staleCover = galleryPic && !galleryExists ? galleryPic : null;
+
+  const detail: NoteDetail = {
+    id: snap.id,
+    title: typeof data.title === 'string' ? data.title : '',
+    content: typeof data.content === 'string' ? data.content : '',
+    qrCode: typeof data.qrCode === 'string' ? data.qrCode : '',
+    images,
+    documents,
+    coverName,
+    staleCover,
+    fingerprint: fingerprint(data),
+    hasSketch,
+    hasSketchPreview,
+  };
+  detailCache.set(key, { loadedAt: Date.now(), value: detail });
+  return detail;
+}

@@ -1,0 +1,11 @@
+<section class="flex min-h-[80dvh] flex-col items-center justify-center gap-6 text-center">
+  <h1 class="text-3xl font-bold">QrNotes</h1>
+  <button
+    id="login-btn"
+    type="button"
+    data-firebase-config="<%= JSON.stringify(it.firebaseConfig) %>"
+    class="rounded-xl bg-violet-600 px-6 py-3 font-medium text-white shadow hover:bg-violet-500 disabled:opacity-50"
+  >Mit Google anmelden</button>
+  <p id="status" role="status" class="min-h-6 text-sm text-neutral-400"></p>
+</section>
+<script type="module" src="/static/js/login.js"></script>

@@ -1,0 +1,15 @@
+<section class="flex flex-col gap-5 pb-10 pt-4" data-return="<%= it.returnTo %>">
+  <header class="flex items-center gap-3">
+    <a href="<%= it.cancelHref %>" class="-ml-2 rounded-full px-2 py-1 text-2xl text-neutral-300 hover:bg-neutral-900" aria-label="Zurück">&larr;</a>
+    <h1 class="text-xl font-semibold">Code scannen</h1>
+  </header>
+
+  <div class="aspect-square overflow-hidden rounded-xl bg-black">
+    <video id="scan-video" playsinline muted class="h-full w-full object-cover"></video>
+  </div>
+
+  <p id="scan-status" role="status" class="min-h-6 text-center text-sm text-neutral-400">Kamera wird gestartet …</p>
+
+  <a href="<%= it.cancelHref %>" class="rounded-xl bg-neutral-800 px-6 py-3 text-center font-medium hover:bg-neutral-700">Abbrechen</a>
+</section>
+<script type="module" src="/static/js/scan.js"></script>

@@ -1,0 +1,43 @@
+<% const base = '/notes/' + encodeURIComponent(it.noteId); %>
+<section class="flex flex-col gap-4 pb-6 pt-4">
+  <header class="flex items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <a href="<%= it.backHref %>" data-back class="-ml-2 rounded-full px-2 py-1 text-2xl text-neutral-300 hover:bg-neutral-900" aria-label="Zurück">&larr;</a>
+      <h1 class="text-xl font-semibold">Skizze</h1>
+    </div>
+    <span id="sketch-status" role="status" class="text-xs text-neutral-400"></span>
+  </header>
+
+  <div class="flex flex-wrap items-center gap-2">
+    <button type="button" data-tool="select" class="js-tool flex h-11 w-11 items-center justify-center rounded-xl bg-neutral-800 hover:bg-neutral-700" title="Auswahl" aria-label="Auswahl">
+      <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 8-6 2-2 6z"/></svg>
+    </button>
+    <button type="button" data-tool="circle" class="js-tool flex h-11 w-11 items-center justify-center rounded-xl bg-neutral-800 hover:bg-neutral-700" title="Kreis" aria-label="Kreis">
+      <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/></svg>
+    </button>
+    <button type="button" data-tool="rect" class="js-tool flex h-11 w-11 items-center justify-center rounded-xl bg-neutral-800 hover:bg-neutral-700" title="Rechteck" aria-label="Rechteck">
+      <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="14" rx="2"/></svg>
+    </button>
+    <button type="button" data-tool="free" class="js-tool flex h-11 w-11 items-center justify-center rounded-xl bg-neutral-800 hover:bg-neutral-700" title="Freihand" aria-label="Freihand">
+      <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17c3-6 5 4 8-2s4-4 10-1"/></svg>
+    </button>
+    <button type="button" data-tool="text" class="js-tool flex h-11 w-11 items-center justify-center rounded-xl bg-neutral-800 hover:bg-neutral-700" title="Text" aria-label="Text">
+      <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></svg>
+    </button>
+    <label class="flex h-11 w-11 items-center justify-center rounded-xl bg-neutral-800 hover:bg-neutral-700 cursor-pointer" title="Farbe" aria-label="Farbe">
+      <input id="sketch-color" type="color" value="#ffffff" class="h-7 w-7 cursor-pointer rounded-full border-0 bg-transparent p-0">
+    </label>
+    <button id="sketch-undo" type="button" disabled class="flex h-11 w-11 items-center justify-center rounded-xl bg-neutral-800 hover:bg-neutral-700 disabled:opacity-40" title="Rückgängig" aria-label="Rückgängig">
+      <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg>
+    </button>
+    <button id="sketch-redo" type="button" disabled class="flex h-11 w-11 items-center justify-center rounded-xl bg-neutral-800 hover:bg-neutral-700 disabled:opacity-40" title="Wiederholen" aria-label="Wiederholen">
+      <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 000 12h3"/></svg>
+    </button>
+    <button id="sketch-delete"type="button" class="flex h-11 w-11 items-center justify-center rounded-xl bg-red-950 text-red-200 hover:bg-red-900" title="Löschen" aria-label="Löschen">
+      <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>
+    </button>
+  </div>
+
+  <div id="sketch-stage" class="w-full touch-none overflow-hidden rounded-xl bg-neutral-900 ring-1 ring-neutral-700" data-sketch="<%= it.sketch %>" data-save-url="<%= base %>/sketch" data-back-href="<%= it.backHref %>"></div>
+</section>
+<script type="module" src="/static/js/sketch.js"></script>

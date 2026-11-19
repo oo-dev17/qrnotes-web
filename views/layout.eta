@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f0f14">
+  <title><%= it.title %> · QrNotes</title>
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body class="min-h-dvh bg-neutral-950 font-sans text-neutral-100 antialiased">
+  <main class="mx-auto max-w-md px-6 py-4"><%~ it.body %></main>
+</body>
+</html>

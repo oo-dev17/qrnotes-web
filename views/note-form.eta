@@ -1,0 +1,79 @@
+<section class="flex flex-col gap-5 pb-10 pt-4">
+  <header class="flex items-center gap-3">
+    <a href="<%= it.backHref %>" data-back class="-ml-2 rounded-full px-2 py-1 text-2xl text-neutral-300 hover:bg-neutral-900" aria-label="Zurück">&larr;</a>
+    <h1 class="text-xl font-semibold"><%= it.heading %></h1>
+  </header>
+
+  <% if (it.error) { %>
+    <p role="alert" class="rounded-lg bg-red-950 px-4 py-3 text-sm text-red-200"><%= it.error %></p>
+  <% } %>
+
+  <% if (it.duplicate) { %>
+    <div role="status" class="flex flex-col gap-3 rounded-xl bg-neutral-900 p-4 text-sm ring-1 ring-amber-600">
+      <p>Dieser QR-Code gehört bereits zu <span class="font-semibold"><%= it.duplicate.title || '(ohne Titel)' %></span>.</p>
+      <div class="flex flex-wrap gap-2">
+        <a href="/notes/<%= encodeURIComponent(it.duplicate.id) %>" data-back class="rounded-lg bg-neutral-800 px-3 py-2 hover:bg-neutral-700">Diese Notiz öffnen</a>
+        <a href="<%= it.duplicate.discardHref %>" data-back class="rounded-lg bg-amber-700 px-3 py-2 font-medium text-white hover:bg-amber-600">Gescannten Code verwerfen</a>
+      </div>
+    </div>
+  <% } %>
+
+  <% if (it.current) { %>
+    <details class="rounded-xl bg-neutral-900 p-4 text-sm" open>
+      <summary class="cursor-pointer font-medium">Aktueller Stand (gespeichert)</summary>
+      <div class="mt-3 flex flex-col gap-2">
+        <p><span class="text-neutral-400">Titel:</span> <%= it.current.title %></p>
+        <p><span class="text-neutral-400">QR-Code:</span> <%= it.current.qrCode %></p>
+        <p class="whitespace-pre-wrap"><span class="text-neutral-400">Text:</span> <%= it.current.content %></p>
+      </div>
+    </details>
+  <% } %>
+
+  <form method="post" action="<%= it.action %>" class="flex flex-col gap-4" data-note-form>
+    <% if (it.original) { %>
+      <input type="hidden" name="origTitle" value="<%= it.original.title %>">
+      <input type="hidden" name="origQrCode" value="<%= it.original.qrCode %>">
+      <input type="hidden" name="origContent" value="<%= it.original.content %>">
+    <% } %>
+    <label class="flex flex-col gap-1 text-sm text-neutral-400">
+      Titel
+      <input
+        name="title"
+        required
+        maxlength="200"
+        value="<%= it.values.title %>"
+        class="rounded-xl border border-neutral-700 bg-neutral-900 px-4 py-3 text-base text-neutral-100 focus:border-violet-500 focus:outline-none"
+      >
+    </label>
+    <% const scanReturn = it.action === '/notes' ? '/notes/new' : it.action; %>
+    <div class="flex flex-col gap-1 text-sm text-neutral-400">
+      <label for="qr-code">QR-Code</label>
+      <div class="flex gap-2">
+        <input
+          id="qr-code"
+          name="qrCode"
+          maxlength="200"
+          autocomplete="off"
+          value="<%= it.values.qrCode %>"
+          class="min-w-0 flex-1 rounded-xl border border-neutral-700 bg-neutral-900 px-4 py-3 font-mono text-base text-neutral-100 focus:border-violet-500 focus:outline-none"
+        >
+        <a
+          href="/scan?return=<%= encodeURIComponent(scanReturn) %>"
+          data-back
+          class="shrink-0 rounded-xl bg-neutral-800 px-4 py-3 text-base font-medium text-neutral-100 hover:bg-neutral-700"
+        >Scannen</a>
+      </div>
+    </div>
+    <label class="flex flex-col gap-1 text-sm text-neutral-400">
+      Text
+      <textarea
+        name="content"
+        rows="10"
+        maxlength="50000"
+        class="rounded-xl border border-neutral-700 bg-neutral-900 px-4 py-3 text-base text-neutral-100 focus:border-violet-500 focus:outline-none"
+      ><%= it.values.content %></textarea>
+    </label>
+    <button type="submit" class="rounded-xl bg-violet-600 px-6 py-3 font-medium text-white shadow hover:bg-violet-500">Speichern</button>
+  </form>
+</section>
+<script type="module" src="/static/js/note-form.js"></script>

@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+secrets/
+*.log
+
+# generierte Assets (npm run build:assets)
+public/css/app.css
+public/js/

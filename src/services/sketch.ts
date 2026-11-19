@@ -1,0 +1,71 @@
+import { bucket } from '../firebase.js';
+import { invalidateNote, requireNoteRef } from './notes.js';
+
+// Eine Skizze pro Notiz, als Konva-JSON (Layer) in Storage: {docId}/Sketch/sketch.json
+const SKETCH_PATH = (id: string) => `${id}/Sketch/sketch.json`;
+export const SKETCH_MAX_BYTES = 5 * 1024 * 1024;
+
+export class InvalidSketchError extends Error {}
+
+// Gibt das gespeicherte JSON zurück oder null (ohne Skizze).
+export async function getSketch(uid: string, id: string): Promise<string | null> {
+  await requireNoteRef(uid, id);
+  const file = bucket.file(SKETCH_PATH(id));
+  const [exists] = await file.exists();
+  if (!exists) return null;
+  const [body] = await file.download();
+  return body.toString('utf8');
+}
+
+// Prüft, ob ein Objekt wie ein Konva-Layer aussieht (grobe Prüfung, kein Schema).
+export function isLayerJson(value: unknown): boolean {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    (value as { className?: unknown }).className === 'Layer' &&
+    Array.isArray((value as { children?: unknown }).children)
+  );
+}
+
+export async function saveSketch(uid: string, id: string, layer: unknown): Promise<void> {
+  await requireNoteRef(uid, id);
+  if (!isLayerJson(layer)) throw new InvalidSketchError('Ungültige Skizze');
+  const json = JSON.stringify(layer);
+  if (Buffer.byteLength(json, 'utf8') > SKETCH_MAX_BYTES) {
+    throw new InvalidSketchError('Skizze ist zu groß');
+  }
+  await bucket.file(SKETCH_PATH(id)).save(json, {
+    contentType: 'application/json',
+    resumable: false,
+  });
+  invalidateNote(uid, id);
+}
+
+export async function deleteSketch(uid: string, id: string): Promise<void> {
+  await requireNoteRef(uid, id);
+  await bucket.file(SKETCH_PATH(id)).delete({ ignoreNotFound: true });
+  await bucket.file(PREVIEW_PATH(id)).delete({ ignoreNotFound: true });
+  invalidateNote(uid, id);
+}
+
+// Vorschau der Skizze als PNG (vom Editor erzeugt), für die Detailseite.
+const PREVIEW_PATH = (id: string) => `${id}/Sketch/preview.png`;
+export const PREVIEW_MAX_BYTES = 1024 * 1024;
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+export async function savePreview(uid: string, id: string, png: Buffer): Promise<void> {
+  await requireNoteRef(uid, id);
+  if (png.length > PREVIEW_MAX_BYTES || !png.subarray(0, 8).equals(PNG_SIGNATURE)) {
+    throw new InvalidSketchError('Ungültige Vorschau');
+  }
+  await bucket.file(PREVIEW_PATH(id)).save(png, { contentType: 'image/png', resumable: false });
+}
+
+export async function getPreview(uid: string, id: string): Promise<Buffer | null> {
+  await requireNoteRef(uid, id);
+  const file = bucket.file(PREVIEW_PATH(id));
+  const [exists] = await file.exists();
+  if (!exists) return null;
+  const [body] = await file.download();
+  return body;
+}
