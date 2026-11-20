@@ -1,8 +1,8 @@
 import Konva from 'konva';
 
-// Skizzen-Editor: Kreis, Rechteck, Freihand, Text, Auswahl (verschieben/drehen), Farbe, Löschen.
-// Kein „Speichern“-Knopf: jede Änderung wird kurz danach automatisch gespeichert.
-// Die Auswahl-Ebene liegt separat und ist nicht Teil der Speicherung.
+// Sketch editor: circle, rectangle, freehand, text, selection (move/rotate), color, delete.
+// No 'Save' button: every change is saved automatically shortly after.
+// The selection layer is separate and not part of the saved data.
 
 type Tool = 'select' | 'circle' | 'rect' | 'free' | 'text';
 type Drawing =
@@ -12,7 +12,7 @@ type Drawing =
 
 const AUTOSAVE_DELAY_MS = 1200;
 const RETRY_DELAY_MS = 5000;
-const KEEPALIVE_MAX_BYTES = 60_000; // Grenze für fetch(keepalive) beim Verlassen der Seite
+const KEEPALIVE_MAX_BYTES = 60_000; // limit for fetch(keepalive) when leaving the page
 
 const stageEl = document.getElementById('sketch-stage') as HTMLDivElement;
 const statusEl = document.getElementById('sketch-status') as HTMLSpanElement;
@@ -30,14 +30,14 @@ function setStatus(text: string): void {
   statusEl.textContent = text;
 }
 
-// ---------- Speichern (automatisch) ----------
+// ---------- Saving (automatic) ----------
 
-let dirty = false; // es gibt Änderungen, die noch nicht auf dem Server sind
+let dirty = false; // there are changes that are not yet on the server
 let timer: number | undefined;
 let inFlight: Promise<void> | null = null;
-let again = false; // während eines Speicherns kam eine neue Änderung
+let again = false; // a new change came in while a save was running
 
-// Nach jeder abgeschlossenen Änderung: Verlauf festhalten und speichern.
+// After each completed change: record history and save.
 function markDirty(): void {
   recordHistory();
   scheduleSave();
@@ -45,7 +45,7 @@ function markDirty(): void {
 
 function scheduleSave(): void {
   dirty = true;
-  setStatus('Ungespeichert …');
+  setStatus('Unsaved …');
   if (timer !== undefined) window.clearTimeout(timer);
   timer = window.setTimeout(() => void save(), AUTOSAVE_DELAY_MS);
 }
@@ -62,13 +62,13 @@ async function save(): Promise<void> {
   if (!dirty) return;
 
   dirty = false;
-  setStatus('Speichere …');
+  setStatus('Saving …');
   inFlight = (async () => {
     try {
       const res = await fetch(saveUrl, {
         method: 'PUT',
         headers: { 'content-type': 'application/json' },
-        // Konvas toJSON() liefert bereits einen JSON-String; nicht noch einmal kodieren.
+        // Konva's toJSON() already returns a JSON string; do not encode it again.
         body: layer.toJSON(),
         credentials: 'same-origin',
       });
@@ -77,12 +77,12 @@ async function save(): Promise<void> {
         return;
       }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      // Vorschau für die Detailseite. Fehler hier sind nicht kritisch: die Skizze ist schon gespeichert.
+      // Preview for the detail page. Errors here are not critical: the sketch is already saved.
       await uploadPreview().catch(() => undefined);
-      setStatus('Gespeichert');
+      setStatus('Saved');
     } catch {
       dirty = true;
-      setStatus('Speichern fehlgeschlagen – neuer Versuch …');
+      setStatus('Save failed – retrying …');
       timer = window.setTimeout(() => void save(), RETRY_DELAY_MS);
     } finally {
       inFlight = null;
@@ -95,13 +95,13 @@ async function save(): Promise<void> {
   return inFlight;
 }
 
-// Wartet, bis alle Änderungen beim Server angekommen sind (oder der Versuch fehlschlägt).
+// Waits until all changes have reached the server (or the attempt fails).
 async function flush(): Promise<void> {
   await save();
   while (inFlight) await inFlight;
 }
 
-// Vorschau als kleines PNG an den Server (ohne Auswahl-Rahmen).
+// Sends the preview as a small PNG to the server (without selection frame).
 async function uploadPreview(): Promise<void> {
   transformer.visible(false);
   let dataUrl: string;
@@ -118,13 +118,13 @@ async function uploadPreview(): Promise<void> {
     body: blob,
     credentials: 'same-origin',
   });
-  if (!res.ok) throw new Error(`Vorschau: HTTP ${res.status}`);
+  if (!res.ok) throw new Error(`Preview: HTTP ${res.status}`);
 }
 
-// ---------- Rückgängig (nur Änderungen seit dem Öffnen) ----------
+// ---------- Undo (only changes since opening) ----------
 
 const MAX_HISTORY = 100;
-let snapshots: string[] = []; // Zustände der Zeichen-Ebene als JSON
+let snapshots: string[] = []; // states of the drawing layer as JSON
 let historyIndex = 0;
 
 function recordHistory(): void {
@@ -172,18 +172,18 @@ const height = Math.round(width * 1.25);
 const stage = new Konva.Stage({ container: stageEl, width, height });
 stage.content.style.touchAction = 'none';
 
-// Zeichen-Ebene: wird gespeichert. Vorhandene Skizze laden, sonst leer.
+// Drawing layer: gets saved. Load the existing sketch, otherwise empty.
 const saved = stageEl.dataset.sketch ?? '';
 let layer: Konva.Layer;
 try {
   layer = saved ? (Konva.Node.create(saved) as Konva.Layer) : new Konva.Layer();
 } catch {
-  setStatus('Die gespeicherte Skizze konnte nicht geladen werden.');
+  setStatus('The saved sketch could not be loaded.');
   layer = new Konva.Layer();
 }
 stage.add(layer);
 
-// Auswahl-Ebene: Rahmen und Griffe, nicht Teil der Speicherung.
+// Selection layer: frame and handles, not part of the saved data.
 const uiLayer = new Konva.Layer();
 stage.add(uiLayer);
 const transformer = new Konva.Transformer({ rotateEnabled: true, anchorSize: 14, borderStroke: '#a78bfa' });
@@ -205,7 +205,7 @@ function setTool(next: Tool): void {
     btn.classList.toggle('text-white', active);
     btn.classList.toggle('bg-neutral-800', !active);
   });
-  // Verschieben nur im Auswahl-Modus, sonst zeichnet man über die Objekte.
+  // Move only in selection mode, otherwise you would draw over the objects.
   layer.getChildren().forEach((node) => node.draggable(next === 'select'));
   if (next !== 'select') select(null);
 }
@@ -232,7 +232,7 @@ function applyColor(node: Konva.Node, color: string): void {
   else (node as Konva.Shape).stroke(color);
 }
 
-// Zu kleine Striche (Antippen ohne Ziehen) werden verworfen.
+// Strokes that are too small (tap without drag) are discarded.
 function discardIfTiny(d: Drawing): void {
   const tiny =
     (d.kind === 'circle' && d.node.radius() < 3) ||
@@ -245,7 +245,7 @@ stage.on('pointerdown', (e) => {
   const pos = stage.getPointerPosition();
   if (!pos) return;
 
-  // Klick auf Auswahl-Griffe: der Transformer kümmert sich selbst.
+  // Click on selection handles: the transformer handles it itself.
   if (e.target.getLayer() === uiLayer) return;
 
   if (tool === 'select') {
@@ -256,7 +256,7 @@ stage.on('pointerdown', (e) => {
   const color = currentColor();
 
   if (tool === 'text') {
-    const text = window.prompt('Text eingeben');
+    const text = window.prompt('Enter text');
     if (text) {
       layer.add(
         new Konva.Text({ x: pos.x, y: pos.y, text, fontSize: 22, fill: color, draggable: false }),
@@ -320,14 +320,14 @@ function endDrawing(): void {
 stage.on('pointerup', endDrawing);
 stage.on('pointerleave', endDrawing);
 
-// Verschieben und Drehen durch die Auswahl (Events steigen bis zur Stage hoch).
+// Moving and rotating via the selection (events bubble up to the stage).
 stage.on('dragend transformend', markDirty);
 
 toolButtons.forEach((btn) => {
   btn.addEventListener('click', () => setTool((btn.dataset.tool ?? 'select') as Tool));
 });
 
-// Farbe: ändert das ausgewählte Objekt, sonst die Farbe für neue Objekte.
+// Color: changes the selected object, otherwise the color for new objects.
 colorInput.addEventListener('input', () => {
   if (selected) {
     applyColor(selected, colorInput.value);
@@ -359,25 +359,25 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-// ---------- Verlassen der Seite ----------
+// ---------- Leaving the page ----------
 
-// Zurück-Pfeil: vorher alles speichern. Scheitert das, fragen wir nach.
+// Back arrow: save everything first. If that fails, we ask.
 backLink?.addEventListener('click', async (event) => {
   if (!dirty && timer === undefined && !inFlight) return;
   event.preventDefault();
   await flush();
   if (dirty || inFlight) {
-    if (!window.confirm('Die Skizze konnte nicht gespeichert werden. Trotzdem verlassen?')) return;
+    if (!window.confirm('The sketch could not be saved. Leave anyway?')) return;
   }
   window.location.assign(backHref);
 });
 
-// Wechsel in eine andere App oder Tab-Wechsel: sofort speichern.
+// Switching to another app or tab: save immediately.
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') void save();
 });
 
-// Seite wird verlassen (z. B. Zurück-Taste): kleine Skizzen per keepalive noch schicken.
+// Page is being left (e.g. Back key): still send small sketches via keepalive.
 window.addEventListener('pagehide', () => {
   if (!dirty) return;
   const body = layer.toJSON();
@@ -392,12 +392,12 @@ window.addEventListener('pagehide', () => {
   }
 });
 
-// Warnung nur, wenn wirklich noch etwas unterwegs oder ungespeichert ist.
+// Warn only if something is really still in transit or unsaved.
 window.addEventListener('beforeunload', (event) => {
   if (dirty || inFlight) event.preventDefault();
 });
 
-// Ausgangszustand für Rückgängig: die Skizze, wie sie beim Öffnen war.
+// Initial state for undo: the sketch as it was when opened.
 snapshots = [layer.toJSON()];
 historyIndex = 0;
 updateUndoButton();

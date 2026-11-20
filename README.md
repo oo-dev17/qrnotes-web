@@ -1,113 +1,113 @@
 # QrNotes Web
 
-Web-Version der Android-App QrNotes. Nutzt dasselbe Firebase-Projekt.
-Läuft als Docker-Container auf einem Synology-NAS hinter einem Reverse Proxy mit HTTPS.
+Web version of the QrNotes Android app. It uses the same Firebase project.
+It runs as a Docker container on a Synology NAS behind a reverse proxy with HTTPS.
 
 ## Stack
 
-Node 22, TypeScript, Fastify, Eta-Templates, htmx, Tailwind, firebase-admin.
+Node 22, TypeScript, Fastify, Eta templates, htmx, Tailwind, firebase-admin.
 
-## Voraussetzungen
+## Requirements
 
-- Firebase-Projekt mit Firestore, Storage und Google-Login (Authentication)
-- Service-Account-Schlüssel für das Projekt (Firebase-Konsole → Projekteinstellungen → Dienstkonten → Neuen privaten Schlüssel erzeugen)
-- Synology-NAS mit DSM 7.2 oder neuer und dem Paket **Container Manager**
-- Eine Domain mit HTTPS-Zertifikat für den Reverse Proxy (z. B. Let's Encrypt über DSM)
+- A Firebase project with Firestore, Storage and Google sign-in (Authentication)
+- A service account key for the project (Firebase console → Project settings → Service accounts → Generate new private key)
+- A Synology NAS with DSM 7.2 or newer and the **Container Manager** package
+- A domain with an HTTPS certificate for the reverse proxy (e.g. Let's Encrypt via DSM)
 
-## Lokal entwickeln
+## Local development
 
 ```bash
 npm ci
-cp .env.example .env        # Werte eintragen
-mkdir -p secrets            # serviceAccount.json hier ablegen
+cp .env.example .env        # fill in the values
+mkdir -p secrets            # put serviceAccount.json here
 npm run dev
 ```
 
-## Installation auf dem Synology-NAS
+## Installation on the Synology NAS
 
-Alle Befehle laufen auf dem **NAS-Host** (per SSH), nicht im Container. Der Container wird von Docker Compose aus dem Image gebaut und gestartet.
+Run all commands on the **NAS host** (over SSH), not inside the container. Docker Compose builds the image and starts the container.
 
-### 1. Projekt auf das NAS bringen
+### 1. Get the project onto the NAS
 
-Per SSH (Git muss auf dem NAS verfügbar sein) oder über File Station:
+Over SSH (Git must be available on the NAS), or via File Station:
 
 ```bash
 sudo mkdir -p /volume1/docker
 cd /volume1/docker
-sudo git clone https://github.com/<benutzer>/qrnotes-web.git qrnotes
+sudo git clone https://github.com/<user>/qrnotes-web.git qrnotes
 cd qrnotes
 ```
 
-### 2. Geheime Dateien ablegen (nicht in Git)
+### 2. Place the secret files (not in Git)
 
-Zwei Dateien müssen von Hand in das Projektverzeichnis kopiert werden:
+Two files must be copied into the project directory by hand:
 
-- `.env` – Kopie von `.env.example` mit den Firebase-Werten und `PORT`
-- `secrets/serviceAccount.json` – der Service-Account-Schlüssel
+- `.env` – a copy of `.env.example` with the Firebase values and `PORT`
+- `secrets/serviceAccount.json` – the service account key
 
 ```bash
 sudo mkdir -p secrets
-# Dateien z. B. per File Station nach /volume1/docker/qrnotes kopieren
+# copy the files to /volume1/docker/qrnotes, e.g. with File Station
 ```
 
-### 3. Container bauen und starten
+### 3. Build and start the container
 
 ```bash
 cd /volume1/docker/qrnotes
 sudo docker compose up -d --build
 ```
 
-Prüfen:
+Check it:
 
 ```bash
 sudo docker compose ps
 sudo docker compose logs -f
 ```
 
-Danach sollte `http://<NAS-IP>:8090/login` die Login-Seite zeigen.
+Then `http://<NAS-IP>:8090/login` should show the login page.
 
-Alternativ über die Oberfläche: Container Manager → Projekt → Erstellen → Pfad `/volume1/docker/qrnotes` → Erstellen und Starten.
+Alternatively, use the UI: Container Manager → Project → Create → path `/volume1/docker/qrnotes` → Create and start.
 
-### 4. Reverse Proxy und HTTPS
+### 4. Reverse proxy and HTTPS
 
-- DSM → Systemsteuerung → Anmeldeportal → Erweitert → Reverse Proxy → Erstellen:
-  - Quelle: `https://<deine-domain>:443`
-  - Ziel: `http://localhost:8090`
-- Zertifikat für die Domain hinterlegen (Systemsteuerung → Sicherheit → Zertifikat).
-- In der Firebase-Konsole unter Authentication → Settings → Authorized domains die Domain eintragen. Ohne diesen Eintrag schlägt der Google-Login fehl.
+- DSM → Control Panel → Login Portal → Advanced → Reverse Proxy → Create:
+  - Source: `https://<your-domain>:443`
+  - Destination: `http://localhost:8090`
+- Assign a certificate for the domain (Control Panel → Security → Certificate).
+- In the Firebase console, go to Authentication → Settings → Authorized domains and add the domain. Without this, Google sign-in fails.
 
-### 5. Updates einspielen
+### 5. Install updates
 
-Auf dem NAS-Host:
+On the NAS host:
 
 ```bash
 cd /volume1/docker/qrnotes
 sudo git pull
 sudo docker compose up -d --build
-sudo docker image prune -f      # alte Images entfernen (optional)
+sudo docker image prune -f      # remove old images (optional)
 ```
 
-Nur `.env` geändert? Dann genügt `sudo docker compose up -d` ohne `--build`.
+Only `.env` changed? Then `sudo docker compose up -d` without `--build` is enough.
 
-## Betrieb
+## Operations
 
-| Aufgabe | Befehl (auf dem NAS-Host) |
+| Task | Command (on the NAS host) |
 |---|---|
 | Status | `sudo docker compose ps` |
 | Logs | `sudo docker compose logs -f` |
-| Neustart | `sudo docker compose restart` |
-| Stoppen | `sudo docker compose down` |
+| Restart | `sudo docker compose restart` |
+| Stop | `sudo docker compose down` |
 
-Der Container startet nach einem NAS-Neustart automatisch (`restart: unless-stopped`).
+The container starts automatically after a NAS reboot (`restart: unless-stopped`).
 
-## Konfiguration
+## Configuration
 
-| Variable | Bedeutung |
+| Variable | Meaning |
 |---|---|
-| `PORT` | Port im Container (Standard 3000) |
-| `FIREBASE_*` | Web-Konfiguration aus den Firebase-Projekteinstellungen |
-| `GOOGLE_APPLICATION_CREDENTIALS` | Pfad zum Service-Account-Schlüssel (in `compose.yaml` auf den Container-Pfad gesetzt) |
+| `PORT` | Port inside the container (default 3000) |
+| `FIREBASE_*` | Web configuration from the Firebase project settings |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Path to the service account key (set to the container path in `compose.yaml`) |
 
-## Lizenz
+## License
 
-Privat, keine Lizenz.
+Private, no license.

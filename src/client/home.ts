@@ -2,7 +2,7 @@ import { startLivePoll } from './live.js';
 
 const logoutButton = document.getElementById('logout-btn') as HTMLButtonElement;
 
-// Liste: Änderungen aus Web oder Android melden (Fingerprint der ganzen Liste).
+// List: report changes from web or Android (fingerprint of the whole list).
 const noteList = document.getElementById('note-list');
 const listFp = noteList?.dataset.liveFp ?? '';
 startLivePoll('/live/list', (data) => String(data.fp) !== listFp);
@@ -13,7 +13,7 @@ logoutButton.addEventListener('click', async () => {
   window.location.assign('/login');
 });
 
-// Menü schließen: Tipp außerhalb des Menüs oder Escape.
+// Close menu: tap outside the menu or Escape.
 const menu = document.getElementById('main-menu') as HTMLDetailsElement | null;
 if (menu) {
   document.addEventListener('click', (event) => {

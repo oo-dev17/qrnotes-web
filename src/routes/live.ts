@@ -2,15 +2,15 @@ import type { FastifyPluginAsync } from 'fastify';
 import { liveListState, liveNoteState } from '../services/live.js';
 import { listFileKeys } from '../services/notes.js';
 
-// Polling-Endpunkte für die Änderungsanzeige (siehe src/client/live.ts).
+// Polling endpoints for the change notification (see src/client/live.ts).
 const liveRoutes: FastifyPluginAsync = async (app) => {
-  // Liste: Fingerprint aller Notizen (Firestore-Listener, kein Firestore-Read).
+  // List: fingerprint of all notes (Firestore listener, no Firestore read).
   app.get('/live/list', async (request) => {
     return liveListState(request.uid!);
   });
 
-  // Detailseite: Fingerprint der Notiz plus Dateiliste aus Storage.
-  // Storage wird nur gelesen, wenn der Listener bestätigt, dass die Notiz dem Nutzer gehört.
+  // Detail page: fingerprint of the note plus file list from Storage.
+  // Storage is only read if the listener confirms that the note belongs to the user.
   app.get<{ Params: { id: string } }>('/notes/:id/live', async (request) => {
     const uid = request.uid!;
     const id = request.params.id;

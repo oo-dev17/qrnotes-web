@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 
-// .env nur lokal laden. Im Container kommen die Variablen aus dem Compose-File.
+// .env is only loaded locally. In the container, the variables come from the Compose file.
 if (existsSync('.env')) {
   process.loadEnvFile('.env');
 }
@@ -8,7 +8,7 @@ if (existsSync('.env')) {
 function required(name: string): string {
   const value = process.env[name];
   if (!value) {
-    throw new Error(`Umgebungsvariable fehlt: ${name}`);
+    throw new Error(`Missing environment variable: ${name}`);
   }
   return value;
 }
@@ -27,4 +27,4 @@ export const config = {
 } as const;
 
 export const SESSION_COOKIE = 'session';
-export const SESSION_MAX_AGE_MS = 5 * 24 * 60 * 60 * 1000; // 5 Tage
+export const SESSION_MAX_AGE_MS = 5 * 24 * 60 * 60 * 1000; // 5 days

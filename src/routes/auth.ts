@@ -3,11 +3,11 @@ import { adminAuth } from '../firebase.js';
 import { SESSION_COOKIE, SESSION_MAX_AGE_MS } from '../config.js';
 
 const authRoutes: FastifyPluginAsync = async (app) => {
-  // Tauscht ein Firebase-ID-Token gegen ein httpOnly-Session-Cookie (5 Tage).
+  // Exchanges a Firebase ID token for an httpOnly session cookie (5 days).
   app.post<{ Body: { idToken?: unknown } }>('/auth/session', async (request, reply) => {
     const idToken = request.body?.idToken;
     if (typeof idToken !== 'string' || idToken.length === 0) {
-      return reply.code(400).send({ error: 'idToken fehlt' });
+      return reply.code(400).send({ error: 'idToken missing' });
     }
 
     try {
@@ -25,8 +25,8 @@ const authRoutes: FastifyPluginAsync = async (app) => {
       });
       return { ok: true };
     } catch (err) {
-      request.log.warn({ err }, 'Session-Erstellung fehlgeschlagen');
-      return reply.code(401).send({ error: 'ungültiges Token' });
+      request.log.warn({ err }, 'Session creation failed');
+      return reply.code(401).send({ error: 'invalid token' });
     }
   });
 

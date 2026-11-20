@@ -1,5 +1,5 @@
 <% if (it.notes.length === 0) { %>
-  <p class="px-6 py-8 text-center text-sm text-neutral-500">Keine Notizen gefunden.</p>
+  <p class="px-6 py-8 text-center text-sm text-neutral-500">No notes found.</p>
 <% } %>
 <% it.notes.forEach(function (n) { %>
   <a href="/notes/<%= encodeURIComponent(n.id) %>" class="flex items-center gap-4 px-6 py-3 hover:bg-neutral-900 active:bg-neutral-800 even:bg-neutral-900/50">
@@ -14,7 +14,7 @@
       <div class="h-16 w-20 shrink-0 rounded-md bg-neutral-800"></div>
     <% } %>
     <div class="min-w-0 flex-1">
-      <p class="truncate text-base font-semibold"><%= n.title || '(ohne Titel)' %></p>
+      <p class="truncate text-base font-semibold"><%= n.title || '(untitled)' %></p>
       <p class="truncate font-mono text-xs text-neutral-500"><%= n.documentId %></p>
       <% if (n.qrCode) { %>
         <p class="truncate font-mono text-xs text-neutral-500"><%= n.qrCode %></p>

@@ -4,7 +4,7 @@ import { findNoteByQrCode } from '../services/notes.js';
 
 const QR_MAX = 200;
 
-// Erlaubte Rücksprung-Ziele: nur die Notiz-Formulare (Neu / Bearbeiten), keine fremden URLs.
+// Allowed return targets: only the note forms (new / edit), no foreign URLs.
 const RETURN_PATH = /^(\/notes\/new|\/notes\/[A-Za-z0-9_-]{1,128}\/edit)$/;
 
 function safeReturn(value: unknown): string {
@@ -12,20 +12,20 @@ function safeReturn(value: unknown): string {
 }
 
 const scanRoutes: FastifyPluginAsync = async (app) => {
-  // Kamera-Seite. Der Scan-Code läuft im Browser (BarcodeDetector).
+  // Camera page. The scan code runs in the browser (BarcodeDetector).
   app.get<{ Querystring: { return?: unknown } }>('/scan', async (request, reply) => {
     const returnTo = safeReturn(request.query.return);
     reply.type('text/html; charset=utf-8');
-    return render('scan', { title: 'Scannen', returnTo, cancelHref: returnTo || '/' });
+    return render('scan', { title: 'Scan', returnTo, cancelHref: returnTo || '/' });
   });
 
-  // Ergebnis eines Scans.
-  // - mit Rücksprung (Formular): zurück ins Formular, Code wird eingetragen.
-  // - ohne: vorhandene Notiz öffnen, sonst neue Notiz mit dem Code anlegen.
+  // Result of a scan.
+  // - with return (form): back to the form, code is filled in.
+  // - without: open the existing note, otherwise create a new note with the code.
   app.get<{ Querystring: { code?: unknown; return?: unknown } }>('/scan/result', async (request, reply) => {
     const code = typeof request.query.code === 'string' ? request.query.code.trim() : '';
     if (!code || code.length > QR_MAX) {
-      return reply.code(400).type('text/plain; charset=utf-8').send('Ungültiger Code');
+      return reply.code(400).type('text/plain; charset=utf-8').send('Invalid code');
     }
     const returnTo = safeReturn(request.query.return);
     if (returnTo) {

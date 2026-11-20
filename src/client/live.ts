@@ -1,5 +1,5 @@
-// Fragt alle 30 s (nur bei sichtbarem Tab) den Server nach Änderungen und zeigt dann das Banner.
-// ready=false heißt: der Server kennt den Stand noch nicht, dann wird nichts gemeldet.
+// Polls the server every 30 s (only while the tab is visible) for changes and then shows the banner.
+// ready=false means the server does not know the state yet, so nothing is reported.
 const POLL_MS = 30_000;
 
 export function startLivePoll(
@@ -24,7 +24,7 @@ export function startLivePoll(
       const data = (await res.json()) as { ready: boolean } & Record<string, unknown>;
       if (data.ready && isChanged(data)) banner.hidden = false;
     } catch {
-      // Netzfehler ignorieren; der nächste Versuch kommt automatisch.
+      // Ignore network errors; the next attempt happens automatically.
     }
   };
 

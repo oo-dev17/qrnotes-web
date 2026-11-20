@@ -14,7 +14,7 @@ function setStatus(text: string): void {
 
 button.addEventListener('click', async () => {
   button.disabled = true;
-  setStatus('Anmeldung läuft …');
+  setStatus('Signing in …');
   try {
     const result = await signInWithPopup(auth, provider);
     const idToken = await result.user.getIdToken();
@@ -30,9 +30,9 @@ button.addEventListener('click', async () => {
     }
     window.location.assign('/');
   } catch (err) {
-    console.error('Login fehlgeschlagen:', err);
+    console.error('Login failed:', err);
     const code = (err as { code?: string }).code ?? String(err);
-    setStatus(`Anmeldung fehlgeschlagen: ${code}`);
+    setStatus(`Sign-in failed: ${code}`);
     button.disabled = false;
   }
 });

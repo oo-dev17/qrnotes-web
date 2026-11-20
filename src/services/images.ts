@@ -2,8 +2,8 @@ import sharp from 'sharp';
 import { bucket } from '../firebase.js';
 import { NoteNotFoundError, requireNoteRef } from './notes.js';
 
-// Thumbnails liegen als Cache neben dem Original: {docId}/Thumbs/{name}.
-// Sie entstehen beim ersten Aufruf und werden danach aus Storage ausgeliefert.
+// Thumbnails are cached next to the original: {docId}/Thumbs/{name}.
+// They are created on first request and served from Storage afterwards.
 const THUMB_WIDTH = 480;
 const THUMB_QUALITY = 80;
 
@@ -12,7 +12,7 @@ export interface ImageBytes {
   contentType: string;
 }
 
-// Prüft Besitz über Firestore (users/{uid}/qrNotes/{id}), bevor Storage angefasst wird.
+// Checks ownership via Firestore (users/{uid}/qrNotes/{id}) before Storage is touched.
 export async function getThumb(uid: string, id: string, name: string): Promise<ImageBytes> {
   if (!name || name === '.' || name === '..' || /[/\\]/.test(name)) {
     throw new NoteNotFoundError();
@@ -31,12 +31,12 @@ export async function getThumb(uid: string, id: string, name: string): Promise<I
   let resized: Buffer;
   try {
     resized = await sharp(originalBody)
-      .rotate() // EXIF-Ausrichtung übernehmen (Handyfotos)
+      .rotate() // apply EXIF orientation (phone photos)
       .resize({ width: THUMB_WIDTH, withoutEnlargement: true })
       .jpeg({ quality: THUMB_QUALITY })
       .toBuffer();
   } catch {
-    // Format von sharp nicht lesbar (z. B. HEIC ohne Decoder): Original ausliefern.
+    // Format not readable by sharp (e.g. HEIC without a decoder): serve the original.
     const [meta] = await original.getMetadata();
     return { body: originalBody, contentType: meta.contentType ?? 'application/octet-stream' };
   }

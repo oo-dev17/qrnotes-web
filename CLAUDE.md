@@ -1,44 +1,44 @@
 # QrNotes Web
 
-Web-Kopie der Android-App QrNotes. Gleiches Firebase-Projekt (qrnotes-f41bf).
+Web copy of the QrNotes Android app. Same Firebase project (qrnotes-f41bf).
 
 ## Stack
-Node 22, TypeScript, Fastify, Eta-Templates, htmx, Tailwind, firebase-admin.
-Läuft als Docker-Container auf Synology (Reverse Proxy, HTTPS). Mobile-first, PWA.
+Node 22, TypeScript, Fastify, Eta templates, htmx, Tailwind, firebase-admin.
+Runs as a Docker container on Synology (reverse proxy, HTTPS). Mobile-first, PWA.
 
-## Datenmodell
+## Data model
 - Firestore: users/{uid}/qrNotes/{docId}
-  Felder: title, content, creationDate (ms), qrCode, documentId, galleryPic (Dateiname)
-  `allDocuments` ignorieren.
-- Storage-Bucket qrnotes-f41bf.firebasestorage.app:
+  Fields: title, content, creationDate (ms), qrCode, documentId, galleryPic (file name)
+  Ignore `allDocuments`.
+- Storage bucket qrnotes-f41bf.firebasestorage.app:
   {docId}/Images/*, {docId}/Documents/* (PDFs)
-- Zugriff nur über Admin SDK. Vor jedem Storage-Zugriff prüfen, dass
-  users/{uid}/qrNotes/{docId} existiert (Storage-Pfad enthält keine uid).
-- Dateien über Signed URLs (v4, 1 h) ausliefern.
+- Access only via Admin SDK. Before every Storage access, check that
+  users/{uid}/qrNotes/{docId} exists (the Storage path contains no uid).
+- Deliver files via signed URLs (v4, 1 h).
 
 ## Auth
-Firebase JS SDK Google-Login im Browser -> ID-Token an Server -> createSessionCookie
-(httpOnly, secure). Jede Route außer /login prüft das Cookie.
+Firebase JS SDK Google login in the browser -> ID token to server -> createSessionCookie
+(httpOnly, secure). Every route except /login checks the cookie.
 
 ## UI
-Liste: Thumbnail (galleryPic), Titel, documentId, qrCode, Suchfeld (Filter im
-Server-Cache, 5 Min), Buttons QR-Scan und Neu. Detail: Text, Bildergalerie, PDFs.
+List: thumbnail (galleryPic), title, documentId, qrCode, search field (filter in the
+server cache, 5 min), buttons QR scan and New. Detail: text, image gallery, PDFs.
 
 
-## Reihenfolge
-1. Login + Session
-2. Liste + Suche
-3. Detail mit Bildern/PDF
-4. QR-Scan (Code -> Notiz öffnen)
+## Order
+1. Login + session
+2. List + search
+3. Detail with images/PDF
+4. QR scan (code -> open note)
 5. Dockerfile + compose
 
-## Regeln
-- Keine Secrets im Code oder Git (.env, secrets/ in .gitignore).
-- Kein Firebase-Admin- oder Claude-Key im Browser.
-- Firestore-Reads sparsam halten, Listen cachen.
-- Claude-API (falls genutzt): Haiku, max_tokens begrenzen, Prompt Caching.
-- Immer kleine Schritte, danach lauffähig testen.
+## Rules
+- No secrets in code or Git (.env, secrets/ in .gitignore).
+- No Firebase Admin or Claude key in the browser.
+- Keep Firestore reads low, cache lists.
+- Claude API (if used): Haiku, limit max_tokens, prompt caching.
+- Always small steps, then test that it runs.
 
-## Reihenfolge
-1. Login + Session  2. Liste + Suche  3. Detail mit Bildern/PDF
-4. Anlegen/Bearbeiten/Löschen  5. QR-Scan  6. Dockerfile + compose
+## Order
+1. Login + session  2. List + search  3. Detail with images/PDF
+4. Create/edit/delete  5. QR scan  6. Dockerfile + compose

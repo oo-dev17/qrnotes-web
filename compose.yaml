@@ -4,15 +4,15 @@ services:
     image: qrnotes-web:local
     container_name: qrnotes
     restart: unless-stopped
-    # Alle Firebase-Werte kommen aus der .env neben dieser Datei (nicht in Git).
+    # All Firebase values come from the .env file next to this file (not in Git).
     env_file: .env
     environment:
       NODE_ENV: production
       PORT: 3000
-      # Überschreibt den lokalen Pfad aus der .env; der Container sieht die Datei unter diesem Pfad.
+      # Overrides the local path from .env; this is where the container sees the file.
       GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/serviceAccount.json
     volumes:
       - ./secrets/serviceAccount.json:/run/secrets/serviceAccount.json:ro
-    # Host-Port 8090 -> Container-Port 3000. Der Reverse Proxy zeigt auf 8090.
+    # Host port 8090 -> container port 3000. The reverse proxy points to 8090.
     ports:
       - "8090:3000"

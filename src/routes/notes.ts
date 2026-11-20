@@ -37,24 +37,24 @@ function formString(body: unknown, key: string): string {
 
 const str = (value: unknown): string => (typeof value === 'string' ? value : '');
 
-// Zeilenenden und äußere Leerzeichen angleichen, bevor Texte verglichen werden.
+// Normalize line endings and outer whitespace before comparing texts.
 const normalizeText = (s: string): string => s.replace(/\r\n/g, '\n').trim();
 
-// Gibt die Felder zurück oder eine Fehlermeldung.
+// Returns the fields or an error message.
 function parseNoteFields(body: unknown): { fields: NoteFields; error?: string } {
   const fields: NoteFields = {
     title: formString(body, 'title').trim(),
     qrCode: formString(body, 'qrCode').trim(),
     content: formString(body, 'content').replace(/\r\n/g, '\n'),
   };
-  if (!fields.title) return { fields, error: 'Bitte einen Titel eingeben.' };
-  if (fields.title.length > TITLE_MAX) return { fields, error: 'Titel ist zu lang.' };
-  if (fields.qrCode.length > QR_MAX) return { fields, error: 'QR-Code ist zu lang.' };
-  if (fields.content.length > CONTENT_MAX) return { fields, error: 'Text ist zu lang.' };
+  if (!fields.title) return { fields, error: 'Please enter a title.' };
+  if (fields.title.length > TITLE_MAX) return { fields, error: 'Title is too long.' };
+  if (fields.qrCode.length > QR_MAX) return { fields, error: 'QR code is too long.' };
+  if (fields.content.length > CONTENT_MAX) return { fields, error: 'Text is too long.' };
   return { fields };
 }
 
-// Fehler beim Hochladen zurück auf die Detailseite, dort als Meldung anzeigen.
+// Upload errors go back to the detail page and are shown there as a message.
 function uploadError(reply: FastifyReply, id: string, err: unknown) {
   if (err instanceof InvalidInputError) {
     return reply
@@ -66,7 +66,7 @@ function uploadError(reply: FastifyReply, id: string, err: unknown) {
 
 function sendError(reply: FastifyReply, err: unknown) {
   if (err instanceof NoteNotFoundError) {
-    return reply.code(404).type('text/plain; charset=utf-8').send('Notiz nicht gefunden');
+    return reply.code(404).type('text/plain; charset=utf-8').send('Note not found');
   }
   if (err instanceof InvalidInputError) {
     return reply.code(400).type('text/plain; charset=utf-8').send(err.message);
@@ -75,7 +75,7 @@ function sendError(reply: FastifyReply, err: unknown) {
 }
 
 const notesRoutes: FastifyPluginAsync = async (app) => {
-  // htmx-Endpunkt: liefert nur die Notizliste für das Suchfeld.
+  // htmx endpoint: returns only the note list for the search field.
   app.get<{ Querystring: { q?: unknown; sort?: unknown } }>('/notes', async (request, reply) => {
     const q = typeof request.query.q === 'string' ? request.query.q : '';
     const notes = await searchNotes(request.uid!, q, parseSort(request.query.sort));
@@ -83,15 +83,15 @@ const notesRoutes: FastifyPluginAsync = async (app) => {
     return renderPartial('partials/note-list', { notes });
   });
 
-  // Anlegen
-  // ?qrCode=… kommt vom Scanner, wenn zu dem Code noch keine Notiz existiert.
+  // Create
+  // ?qrCode=… comes from the scanner when no note exists for that code yet.
   app.get<{ Querystring: { qrCode?: unknown } }>('/notes/new', async (request, reply) => {
     const qrCode = typeof request.query.qrCode === 'string' ? request.query.qrCode.slice(0, 200) : '';
     const hit = qrCode ? await findNoteByQrCode(request.uid!, qrCode) : null;
     reply.type('text/html; charset=utf-8');
     return render('note-form', {
-      title: 'Neue Notiz',
-      heading: 'Neue Notiz',
+      title: 'New note',
+      heading: 'New note',
       action: '/notes',
       backHref: '/',
       values: { title: '', qrCode, content: '' },
@@ -105,8 +105,8 @@ const notesRoutes: FastifyPluginAsync = async (app) => {
     if (error) {
       reply.code(400).type('text/html; charset=utf-8');
       return render('note-form', {
-        title: 'Neue Notiz',
-        heading: 'Neue Notiz',
+        title: 'New note',
+        heading: 'New note',
         action: '/notes',
         backHref: '/',
         values: fields,
@@ -117,33 +117,33 @@ const notesRoutes: FastifyPluginAsync = async (app) => {
     return reply.code(303).redirect(`/notes/${encodeURIComponent(id)}`);
   });
 
-  // Thumbnail eines Bildes (klein, gecacht). Vollbild lädt die Lightbox über die Signed URL.
+  // Thumbnail of an image (small, cached). The lightbox loads the full image via the signed URL.
   app.get<{ Params: { id: string; name: string } }>('/notes/:id/thumb/:name', async (request, reply) => {
     try {
       const img = await getThumb(request.uid!, request.params.id, request.params.name);
-      // Eigene URL pro Bild, daher darf der Browser sie einen Tag lang behalten.
+      // Own URL per image, so the browser may keep it for one day.
       reply.header('Cache-Control', 'private, max-age=86400');
       return reply.type(img.contentType).send(img.body);
     } catch (err) {
       if (err instanceof NoteNotFoundError || (err as { code?: number }).code === 404) {
-        return reply.code(404).type('text/plain; charset=utf-8').send('Bild nicht gefunden');
+        return reply.code(404).type('text/plain; charset=utf-8').send('Image not found');
       }
       throw err;
     }
   });
 
-  // Detailseite: Text, Bildergalerie, PDFs.
+  // Detail page: text, image gallery, PDFs.
   app.get<{ Params: { id: string }; Querystring: { fehler?: unknown } }>(
     '/notes/:id',
     async (request, reply) => {
       ensureLive(request.uid!);
       const note = await getNoteDetail(request.uid!, request.params.id);
       if (!note) {
-        return reply.code(404).type('text/plain; charset=utf-8').send('Notiz nicht gefunden');
+        return reply.code(404).type('text/plain; charset=utf-8').send('Note not found');
       }
       reply.type('text/html; charset=utf-8');
       return render('note', {
-        title: note.title || 'Notiz',
+        title: note.title || 'Note',
         note,
         contentHtml: linkifyText(note.content),
         liveFiles: fileKeys(note.images, note.documents, note.hasSketch),
@@ -152,25 +152,25 @@ const notesRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  // Bearbeiten
-  // ?qrCode=… kommt vom Scanner („Scannen“ im Formular): der gescannte Code ersetzt den Wert im Feld.
+  // Edit
+  // ?qrCode=… comes from the scanner ('Scan' in the form): the scanned code replaces the value in the field.
   app.get<{ Params: { id: string }; Querystring: { qrCode?: unknown } }>(
     '/notes/:id/edit',
     async (request, reply) => {
       const note = await getNoteDetail(request.uid!, request.params.id);
       if (!note) {
-        return reply.code(404).type('text/plain; charset=utf-8').send('Notiz nicht gefunden');
+        return reply.code(404).type('text/plain; charset=utf-8').send('Note not found');
       }
       const scanned = str(request.query.qrCode).trim().slice(0, 200);
-      // Gehört der gescannte Code schon einer anderen Notiz? Dann wird deren Name genannt.
+      // Does the scanned code already belong to another note? Then that note's name is shown.
       const hit =
         scanned && scanned !== note.qrCode
           ? await findNoteByQrCode(request.uid!, scanned, note.id)
           : null;
       reply.type('text/html; charset=utf-8');
       return render('note-form', {
-        title: 'Bearbeiten',
-        heading: 'Notiz bearbeiten',
+        title: 'Edit',
+        heading: 'Edit note',
         action: `/notes/${encodeURIComponent(note.id)}/edit`,
         backHref: `/notes/${encodeURIComponent(note.id)}`,
         values: {
@@ -194,8 +194,8 @@ const notesRoutes: FastifyPluginAsync = async (app) => {
     if (error) {
       reply.code(400).type('text/html; charset=utf-8');
       return render('note-form', {
-        title: 'Bearbeiten',
-        heading: 'Notiz bearbeiten',
+        title: 'Edit',
+        heading: 'Edit note',
         action: `/notes/${encodeURIComponent(id)}/edit`,
         backHref: `/notes/${encodeURIComponent(id)}`,
         values: fields,
@@ -207,7 +207,7 @@ const notesRoutes: FastifyPluginAsync = async (app) => {
         error,
       });
     }
-    // Konflikt-Check: Hat sich die Notiz seit dem Laden des Formulars geändert (z. B. in der Android-App)?
+    // Conflict check: has the note changed since the form was loaded (e.g. in the Android app)?
     const body = request.body as Record<string, unknown> | undefined;
     if (body && body.origTitle !== undefined) {
       let stored: NoteFields;
@@ -233,16 +233,16 @@ const notesRoutes: FastifyPluginAsync = async (app) => {
       if (changed) {
         reply.code(409).type('text/html; charset=utf-8');
         return render('note-form', {
-          title: 'Bearbeiten',
-          heading: 'Notiz bearbeiten',
+          title: 'Edit',
+          heading: 'Edit note',
           action: `/notes/${encodeURIComponent(id)}/edit`,
           backHref: `/notes/${encodeURIComponent(id)}`,
           values: fields,
           original: stored,
           current: stored,
           error:
-            'Die Notiz wurde inzwischen geändert (z. B. in der Android-App). Deine Fassung steht unten. ' +
-            'Mit „Speichern“ übernimmst du deine Fassung; der aktuelle Stand steht darunter.',
+            'The note has been changed in the meantime (e.g. in the Android app). Your version is shown below. ' +
+            'Click “Save” to keep your version; the current version is shown below.',
         });
       }
     }
@@ -255,7 +255,7 @@ const notesRoutes: FastifyPluginAsync = async (app) => {
     return reply.code(303).redirect(`/notes/${encodeURIComponent(id)}`);
   });
 
-  // Löschen
+  // Delete
   app.post<{ Params: { id: string } }>('/notes/:id/delete', async (request, reply) => {
     try {
       await deleteNote(request.uid!, request.params.id);
@@ -265,7 +265,7 @@ const notesRoutes: FastifyPluginAsync = async (app) => {
     return reply.code(303).redirect('/');
   });
 
-  // Bilder hochladen (ein oder mehrere Dateien)
+  // Upload images (one or more files)
   app.post<{ Params: { id: string } }>('/notes/:id/images', async (request, reply) => {
     const id = request.params.id;
     try {
@@ -279,7 +279,7 @@ const notesRoutes: FastifyPluginAsync = async (app) => {
     return reply.code(303).redirect(`/notes/${encodeURIComponent(id)}`);
   });
 
-  // Bild löschen
+  // Delete image
   app.post<{ Params: { id: string } }>('/notes/:id/images/delete', async (request, reply) => {
     const id = request.params.id;
     try {
@@ -290,7 +290,7 @@ const notesRoutes: FastifyPluginAsync = async (app) => {
     return reply.code(303).redirect(`/notes/${encodeURIComponent(id)}`);
   });
 
-  // Titelbild (galleryPic) setzen
+  // Set cover image (galleryPic)
   app.post<{ Params: { id: string } }>('/notes/:id/images/cover', async (request, reply) => {
     const id = request.params.id;
     try {
@@ -301,7 +301,7 @@ const notesRoutes: FastifyPluginAsync = async (app) => {
     return reply.code(303).redirect(`/notes/${encodeURIComponent(id)}`);
   });
 
-  // Kaputten Titelbild-Verweis entfernen (Antwort auf die Rückfrage in der Detailseite)
+  // Remove broken cover image reference (answer to the prompt on the detail page)
   app.post<{ Params: { id: string } }>('/notes/:id/cover/clear', async (request, reply) => {
     const id = request.params.id;
     try {
@@ -312,33 +312,33 @@ const notesRoutes: FastifyPluginAsync = async (app) => {
     return reply.code(303).redirect(`/notes/${encodeURIComponent(id)}`);
   });
 
-  // PDFs hochladen
+  // Upload PDFs
   app.post<{ Params: { id: string } }>('/notes/:id/documents', async (request, reply) => {
     const id = request.params.id;
     const log = request.log.child({ upload: 'pdf', noteId: id });
-    log.info({ contentType: request.headers['content-type'] }, 'PDF-Upload: Anfrage empfangen');
+    log.info({ contentType: request.headers['content-type'] }, 'PDF upload: request received');
     let files = 0;
     try {
       for await (const part of request.parts()) {
         log.info(
           { type: part.type, field: part.fieldname, filename: part.type === 'file' ? part.filename : undefined,
             mimetype: part.type === 'file' ? part.mimetype : undefined },
-          'PDF-Upload: Teil empfangen',
+          'PDF upload: part received',
         );
         if (part.type !== 'file') continue;
         files++;
         await uploadDocument(request.uid!, id, part.file, part.mimetype, part.filename);
-        log.info({ filename: part.filename }, 'PDF-Upload: gespeichert');
+        log.info({ filename: part.filename }, 'PDF upload: saved');
       }
-      log.info({ files }, 'PDF-Upload: fertig');
+      log.info({ files }, 'PDF upload: done');
     } catch (err) {
-      log.warn({ err, files }, 'PDF-Upload: fehlgeschlagen');
+      log.warn({ err, files }, 'PDF upload: failed');
       return uploadError(reply, id, err);
     }
     return reply.code(303).redirect(`/notes/${encodeURIComponent(id)}`);
   });
 
-  // PDF löschen
+  // Delete PDF
   app.post<{ Params: { id: string } }>('/notes/:id/documents/delete', async (request, reply) => {
     const id = request.params.id;
     try {
