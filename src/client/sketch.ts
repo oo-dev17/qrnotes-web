@@ -45,7 +45,7 @@ function markDirty(): void {
 
 function scheduleSave(): void {
   dirty = true;
-  setStatus('Ungespeichert …');
+  setStatus('Unsaved …');
   if (timer !== undefined) window.clearTimeout(timer);
   timer = window.setTimeout(() => void save(), AUTOSAVE_DELAY_MS);
 }
@@ -62,7 +62,7 @@ async function save(): Promise<void> {
   if (!dirty) return;
 
   dirty = false;
-  setStatus('Speichere …');
+  setStatus('Saving …');
   inFlight = (async () => {
     try {
       const res = await fetch(saveUrl, {
@@ -79,10 +79,10 @@ async function save(): Promise<void> {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       // Preview for the detail page. Errors here are not critical: the sketch is already saved.
       await uploadPreview().catch(() => undefined);
-      setStatus('Gespeichert');
+      setStatus('Saved');
     } catch {
       dirty = true;
-      setStatus('Speichern fehlgeschlagen – neuer Versuch …');
+      setStatus('Save failed – retrying …');
       timer = window.setTimeout(() => void save(), RETRY_DELAY_MS);
     } finally {
       inFlight = null;
@@ -118,7 +118,7 @@ async function uploadPreview(): Promise<void> {
     body: blob,
     credentials: 'same-origin',
   });
-  if (!res.ok) throw new Error(`Vorschau: HTTP ${res.status}`);
+  if (!res.ok) throw new Error(`Preview: HTTP ${res.status}`);
 }
 
 // ---------- Undo (only changes since opening) ----------
@@ -178,7 +178,7 @@ let layer: Konva.Layer;
 try {
   layer = saved ? (Konva.Node.create(saved) as Konva.Layer) : new Konva.Layer();
 } catch {
-  setStatus('Die gespeicherte Skizze konnte nicht geladen werden.');
+  setStatus('The saved sketch could not be loaded.');
   layer = new Konva.Layer();
 }
 stage.add(layer);
@@ -256,7 +256,7 @@ stage.on('pointerdown', (e) => {
   const color = currentColor();
 
   if (tool === 'text') {
-    const text = window.prompt('Text eingeben');
+    const text = window.prompt('Enter text');
     if (text) {
       layer.add(
         new Konva.Text({ x: pos.x, y: pos.y, text, fontSize: 22, fill: color, draggable: false }),
@@ -367,7 +367,7 @@ backLink?.addEventListener('click', async (event) => {
   event.preventDefault();
   await flush();
   if (dirty || inFlight) {
-    if (!window.confirm('Die Skizze konnte nicht gespeichert werden. Trotzdem verlassen?')) return;
+    if (!window.confirm('The sketch could not be saved. Leave anyway?')) return;
   }
   window.location.assign(backHref);
 });

@@ -40,7 +40,7 @@ async function writeStream(path: string, contentType: string, file: UploadStream
   await pipeline(file, bucket.file(path).createWriteStream({ contentType, resumable: false }));
   if (file.truncated) {
     await bucket.file(path).delete({ ignoreNotFound: true });
-    throw new InvalidInputError('Datei ist zu groß');
+    throw new InvalidInputError('File is too large');
   }
 }
 
@@ -78,7 +78,7 @@ export async function uploadImage(
 ): Promise<void> {
   await requireNoteRef(uid, id);
   const ext = IMAGE_EXT[mimetype];
-  if (!ext) throw new InvalidInputError('Bildformat nicht unterstützt');
+  if (!ext) throw new InvalidInputError('Image format not supported');
   // The name has no bearing on the order; the order comes from timeCreated.
   const path = `${id}/Images/${Date.now()}-${randomUUID().slice(0, 8)}.${ext}`;
   await writeStream(path, mimetype, file);
@@ -95,7 +95,7 @@ export async function uploadDocument(
   await requireNoteRef(uid, id);
   // Some file managers and cloud apps report PDFs as application/octet-stream; then the file name counts.
   const isPdf = mimetype === 'application/pdf' || filename.toLowerCase().endsWith('.pdf');
-  if (!isPdf) throw new InvalidInputError('Nur PDF-Dateien erlaubt');
+  if (!isPdf) throw new InvalidInputError('Only PDF files allowed');
 
   const base = sanitizeFilename(filename);
   const stem = base.slice(0, -'.pdf'.length);
@@ -109,7 +109,7 @@ export async function uploadDocument(
 
 export async function deleteImage(uid: string, id: string, name: string): Promise<void> {
   const ref = await requireNoteRef(uid, id);
-  if (!isSafeName(name)) throw new InvalidInputError('Ungültiger Dateiname');
+  if (!isSafeName(name)) throw new InvalidInputError('Invalid file name');
   await bucket.file(`${id}/Images/${name}`).delete({ ignoreNotFound: true });
   await bucket.file(`${id}/Thumbs/${name}`).delete({ ignoreNotFound: true });
   // If the image was the cover image, the selection falls back to the oldest image.
@@ -122,9 +122,9 @@ export async function deleteImage(uid: string, id: string, name: string): Promis
 
 export async function setGalleryPic(uid: string, id: string, name: string): Promise<void> {
   const ref = await requireNoteRef(uid, id);
-  if (!isSafeName(name)) throw new InvalidInputError('Ungültiger Dateiname');
+  if (!isSafeName(name)) throw new InvalidInputError('Invalid file name');
   const [exists] = await bucket.file(`${id}/Images/${name}`).exists();
-  if (!exists) throw new InvalidInputError('Bild nicht gefunden');
+  if (!exists) throw new InvalidInputError('Image not found');
   await ref.update({ galleryPic: name });
   invalidateNote(uid, id);
 }
@@ -142,7 +142,7 @@ export async function clearStaleGalleryPic(uid: string, id: string, name: string
 
 export async function deleteDocument(uid: string, id: string, name: string): Promise<void> {
   await requireNoteRef(uid, id);
-  if (!isSafeName(name)) throw new InvalidInputError('Ungültiger Dateiname');
+  if (!isSafeName(name)) throw new InvalidInputError('Invalid file name');
   await bucket.file(`${id}/Documents/${name}`).delete({ ignoreNotFound: true });
   invalidateNote(uid, id);
 }

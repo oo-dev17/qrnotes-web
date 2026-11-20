@@ -29,10 +29,10 @@ export function isLayerJson(value: unknown): boolean {
 
 export async function saveSketch(uid: string, id: string, layer: unknown): Promise<void> {
   await requireNoteRef(uid, id);
-  if (!isLayerJson(layer)) throw new InvalidSketchError('Ungültige Skizze');
+  if (!isLayerJson(layer)) throw new InvalidSketchError('Invalid sketch');
   const json = JSON.stringify(layer);
   if (Buffer.byteLength(json, 'utf8') > SKETCH_MAX_BYTES) {
-    throw new InvalidSketchError('Skizze ist zu groß');
+    throw new InvalidSketchError('Sketch is too large');
   }
   await bucket.file(SKETCH_PATH(id)).save(json, {
     contentType: 'application/json',
@@ -56,7 +56,7 @@ const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0
 export async function savePreview(uid: string, id: string, png: Buffer): Promise<void> {
   await requireNoteRef(uid, id);
   if (png.length > PREVIEW_MAX_BYTES || !png.subarray(0, 8).equals(PNG_SIGNATURE)) {
-    throw new InvalidSketchError('Ungültige Vorschau');
+    throw new InvalidSketchError('Invalid preview');
   }
   await bucket.file(PREVIEW_PATH(id)).save(png, { contentType: 'image/png', resumable: false });
 }

@@ -34,7 +34,7 @@ export interface NoteDetail {
 
 export class NoteNotFoundError extends Error {
   constructor() {
-    super('Notiz nicht gefunden');
+    super('Note not found');
   }
 }
 

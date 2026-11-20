@@ -23,16 +23,16 @@ document.querySelectorAll<HTMLInputElement>('input.js-autoupload').forEach((inpu
     const files = Array.from(input.files ?? []);
     console.info('[upload] change', input.name, files.map((f) => `${f.name} | ${f.type} | ${f.size}`));
     if (files.length === 0) {
-      show('Keine Datei erkannt – bitte erneut wählen');
+      show('No file detected – please choose again');
       return;
     }
     if (!input.form) {
-      console.error('[upload] kein Formular gefunden');
-      show('Fehler: kein Formular');
+      console.error('[upload] no form found');
+      show('Error: no form');
       return;
     }
     const more = files.length > 1 ? ` (+${files.length - 1})` : '';
-    show(`Lädt hoch: ${files[0].name}${more} …`);
+    show(`Uploading: ${files[0].name}${more} …`);
     label?.classList.add('pointer-events-none', 'opacity-50');
     input.form.submit();
   });

@@ -1,6 +1,6 @@
 <section class="flex flex-col gap-5 pb-10 pt-4">
   <header class="flex items-center gap-3">
-    <a href="<%= it.backHref %>" data-back class="-ml-2 rounded-full px-2 py-1 text-2xl text-neutral-300 hover:bg-neutral-900" aria-label="Zurück">&larr;</a>
+    <a href="<%= it.backHref %>" data-back class="-ml-2 rounded-full px-2 py-1 text-2xl text-neutral-300 hover:bg-neutral-900" aria-label="Back">&larr;</a>
     <h1 class="text-xl font-semibold"><%= it.heading %></h1>
   </header>
 
@@ -10,19 +10,19 @@
 
   <% if (it.duplicate) { %>
     <div role="status" class="flex flex-col gap-3 rounded-xl bg-neutral-900 p-4 text-sm ring-1 ring-amber-600">
-      <p>Dieser QR-Code gehört bereits zu <span class="font-semibold"><%= it.duplicate.title || '(ohne Titel)' %></span>.</p>
+      <p>This QR code already belongs to <span class="font-semibold"><%= it.duplicate.title || '(untitled)' %></span>.</p>
       <div class="flex flex-wrap gap-2">
-        <a href="/notes/<%= encodeURIComponent(it.duplicate.id) %>" data-back class="rounded-lg bg-neutral-800 px-3 py-2 hover:bg-neutral-700">Diese Notiz öffnen</a>
-        <a href="<%= it.duplicate.discardHref %>" data-back class="rounded-lg bg-amber-700 px-3 py-2 font-medium text-white hover:bg-amber-600">Gescannten Code verwerfen</a>
+        <a href="/notes/<%= encodeURIComponent(it.duplicate.id) %>" data-back class="rounded-lg bg-neutral-800 px-3 py-2 hover:bg-neutral-700">Open this note</a>
+        <a href="<%= it.duplicate.discardHref %>" data-back class="rounded-lg bg-amber-700 px-3 py-2 font-medium text-white hover:bg-amber-600">Discard scanned code</a>
       </div>
     </div>
   <% } %>
 
   <% if (it.current) { %>
     <details class="rounded-xl bg-neutral-900 p-4 text-sm" open>
-      <summary class="cursor-pointer font-medium">Aktueller Stand (gespeichert)</summary>
+      <summary class="cursor-pointer font-medium">Current version (saved)</summary>
       <div class="mt-3 flex flex-col gap-2">
-        <p><span class="text-neutral-400">Titel:</span> <%= it.current.title %></p>
+        <p><span class="text-neutral-400">Title:</span> <%= it.current.title %></p>
         <p><span class="text-neutral-400">QR-Code:</span> <%= it.current.qrCode %></p>
         <p class="whitespace-pre-wrap"><span class="text-neutral-400">Text:</span> <%= it.current.content %></p>
       </div>
@@ -36,7 +36,7 @@
       <input type="hidden" name="origContent" value="<%= it.original.content %>">
     <% } %>
     <label class="flex flex-col gap-1 text-sm text-neutral-400">
-      Titel
+      Title
       <input
         name="title"
         required
@@ -61,7 +61,7 @@
           href="/scan?return=<%= encodeURIComponent(scanReturn) %>"
           data-back
           class="shrink-0 rounded-xl bg-neutral-800 px-4 py-3 text-base font-medium text-neutral-100 hover:bg-neutral-700"
-        >Scannen</a>
+        >Scan</a>
       </div>
     </div>
     <label class="flex flex-col gap-1 text-sm text-neutral-400">
@@ -73,7 +73,7 @@
         class="rounded-xl border border-neutral-700 bg-neutral-900 px-4 py-3 text-base text-neutral-100 focus:border-violet-500 focus:outline-none"
       ><%= it.values.content %></textarea>
     </label>
-    <button type="submit" class="rounded-xl bg-violet-600 px-6 py-3 font-medium text-white shadow hover:bg-violet-500">Speichern</button>
+    <button type="submit" class="rounded-xl bg-violet-600 px-6 py-3 font-medium text-white shadow hover:bg-violet-500">Save</button>
   </form>
 </section>
 <script type="module" src="/static/js/note-form.js"></script>

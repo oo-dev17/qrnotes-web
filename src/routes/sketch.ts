@@ -26,11 +26,11 @@ const sketchRoutes: FastifyPluginAsync = async (app) => {
       png = await getPreview(request.uid!, request.params.id);
     } catch (err) {
       if (err instanceof NoteNotFoundError) {
-        return reply.code(404).type('text/plain; charset=utf-8').send('Notiz nicht gefunden');
+        return reply.code(404).type('text/plain; charset=utf-8').send('Note not found');
       }
       throw err;
     }
-    if (!png) return reply.code(404).type('text/plain; charset=utf-8').send('Keine Vorschau');
+    if (!png) return reply.code(404).type('text/plain; charset=utf-8').send('No preview');
     reply.header('Cache-Control', 'private, no-cache');
     return reply.type('image/png').send(png);
   });
@@ -40,7 +40,7 @@ const sketchRoutes: FastifyPluginAsync = async (app) => {
       await savePreview(request.uid!, request.params.id, request.body as Buffer);
     } catch (err) {
       if (err instanceof NoteNotFoundError) {
-        return reply.code(404).send({ error: 'Notiz nicht gefunden' });
+        return reply.code(404).send({ error: 'Note not found' });
       }
       if (err instanceof InvalidSketchError) {
         return reply.code(400).send({ error: err.message });
@@ -58,13 +58,13 @@ const sketchRoutes: FastifyPluginAsync = async (app) => {
       sketch = await getSketch(request.uid!, id);
     } catch (err) {
       if (err instanceof NoteNotFoundError) {
-        return reply.code(404).type('text/plain; charset=utf-8').send('Notiz nicht gefunden');
+        return reply.code(404).type('text/plain; charset=utf-8').send('Note not found');
       }
       throw err;
     }
     reply.type('text/html; charset=utf-8');
     return render('sketch', {
-      title: 'Skizze',
+      title: 'Sketch',
       noteId: id,
       sketch: sketch ?? '',
       backHref: `/notes/${encodeURIComponent(id)}`,
@@ -80,7 +80,7 @@ const sketchRoutes: FastifyPluginAsync = async (app) => {
         await saveSketch(request.uid!, request.params.id, request.body);
       } catch (err) {
         if (err instanceof NoteNotFoundError) {
-          return reply.code(404).send({ error: 'Notiz nicht gefunden' });
+          return reply.code(404).send({ error: 'Note not found' });
         }
         if (err instanceof InvalidSketchError) {
           return reply.code(400).send({ error: err.message });
@@ -98,7 +98,7 @@ const sketchRoutes: FastifyPluginAsync = async (app) => {
       await deleteSketch(request.uid!, id);
     } catch (err) {
       if (err instanceof NoteNotFoundError) {
-        return reply.code(404).type('text/plain; charset=utf-8').send('Notiz nicht gefunden');
+        return reply.code(404).type('text/plain; charset=utf-8').send('Note not found');
       }
       throw err;
     }

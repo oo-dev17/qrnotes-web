@@ -7,14 +7,14 @@
 >
   <header class="flex items-center justify-between gap-3">
     <div class="flex items-center gap-3">
-      <a href="/" class="-ml-2 rounded-full px-2 py-1 text-2xl text-neutral-300 hover:bg-neutral-900" aria-label="Zurück">&larr;</a>
+      <a href="/" class="-ml-2 rounded-full px-2 py-1 text-2xl text-neutral-300 hover:bg-neutral-900" aria-label="Back">&larr;</a>
       <span class="text-sm text-neutral-400">QrNotes</span>
     </div>
-    <a href="<%= base %>/edit" class="rounded-xl bg-neutral-800 px-4 py-2 text-sm font-medium hover:bg-neutral-700">Bearbeiten</a>
+    <a href="<%= base %>/edit" class="rounded-xl bg-neutral-800 px-4 py-2 text-sm font-medium hover:bg-neutral-700">Edit</a>
   </header>
 
   <div class="flex flex-col gap-1">
-    <h1 class="break-words text-4xl font-semibold leading-tight"><%= it.note.title || '(ohne Titel)' %></h1>
+    <h1 class="break-words text-4xl font-semibold leading-tight"><%= it.note.title || '(untitled)' %></h1>
     <% if (it.note.qrCode) { %>
       <p class="break-all font-mono text-sm text-neutral-400">QR: <%= it.note.qrCode %></p>
     <% } %>
@@ -26,11 +26,11 @@
 
   <% if (it.note.staleCover) { %>
     <div role="alert" class="flex flex-col gap-3 rounded-xl bg-amber-950 p-4 text-sm text-amber-100">
-      <p>Das gespeicherte Titelbild <span class="break-all font-mono text-xs">(<%= it.note.staleCover %>)</span> ist nicht mehr vorhanden. Verweis entfernen?</p>
+      <p>The saved cover image <span class="break-all font-mono text-xs">(<%= it.note.staleCover %>)</span> no longer exists. Remove reference?</p>
       <form method="post" action="<%= base %>/cover/clear" class="flex flex-wrap items-center gap-2">
         <input type="hidden" name="name" value="<%= it.note.staleCover %>">
-        <button type="submit" class="rounded-lg bg-amber-700 px-4 py-2 font-medium text-white hover:bg-amber-600">Ja, entfernen</button>
-        <span class="text-xs text-amber-200/80">Es wird dann das älteste Bild als Titelbild verwendet.</span>
+        <button type="submit" class="rounded-lg bg-amber-700 px-4 py-2 font-medium text-white hover:bg-amber-600">Yes, remove</button>
+        <span class="text-xs text-amber-200/80">The oldest image will then be used as the cover image.</span>
       </form>
     </div>
   <% } %>
@@ -43,7 +43,7 @@
             class="js-open-image h-32 w-32 overflow-hidden rounded-xl bg-neutral-800"
             data-full="<%= img.url %>"
             data-name="<%= img.name %>"
-            aria-label="Bild vergrößern"
+            aria-label="Enlarge image"
           >
             <img
               src="<%= base %>/thumb/<%= encodeURIComponent(img.name) %>"
@@ -55,23 +55,23 @@
           </button>
           <figcaption class="flex items-center justify-between gap-2 text-xs">
             <% if (img.name === it.note.coverName) { %>
-              <span class="rounded bg-violet-700 px-2 py-1 font-semibold text-white">Titelbild</span>
+              <span class="rounded bg-violet-700 px-2 py-1 font-semibold text-white">Cover image</span>
             <% } %>
             <details class="ml-auto">
               <summary
                 class="flex h-7 w-7 cursor-pointer list-none items-center justify-center rounded-full bg-neutral-800 text-base hover:bg-neutral-700 [&::-webkit-details-marker]:hidden"
-                aria-label="Bildmenü"
+                aria-label="Image menu"
               >&#8942;</summary>
               <div class="mt-1 flex flex-col overflow-hidden rounded-xl bg-neutral-900 ring-1 ring-neutral-700">
                 <% if (img.name !== it.note.coverName) { %>
                   <form method="post" action="<%= base %>/images/cover">
                     <input type="hidden" name="name" value="<%= img.name %>">
-                    <button type="submit" class="w-full whitespace-nowrap px-4 py-3 text-left text-sm hover:bg-neutral-800">Als Titelbild</button>
+                    <button type="submit" class="w-full whitespace-nowrap px-4 py-3 text-left text-sm hover:bg-neutral-800">Set as cover image</button>
                   </form>
                 <% } %>
-                <form method="post" action="<%= base %>/images/delete" onsubmit="return confirm('Bild löschen?')">
+                <form method="post" action="<%= base %>/images/delete" onsubmit="return confirm('Delete image?')">
                   <input type="hidden" name="name" value="<%= img.name %>">
-                  <button type="submit" class="w-full whitespace-nowrap px-4 py-3 text-left text-sm text-red-300 hover:bg-neutral-800">Bild löschen</button>
+                  <button type="submit" class="w-full whitespace-nowrap px-4 py-3 text-left text-sm text-red-300 hover:bg-neutral-800">Delete image</button>
                 </form>
               </div>
             </details>
@@ -94,9 +94,9 @@
             <span class="rounded bg-violet-700 px-2 py-0.5 text-xs font-bold text-white">PDF</span>
             <span class="min-w-0 flex-1 truncate"><%= doc.name %></span>
           </a>
-          <form method="post" action="<%= base %>/documents/delete" onsubmit="return confirm('PDF löschen?')">
+          <form method="post" action="<%= base %>/documents/delete" onsubmit="return confirm('Delete PDF?')">
             <input type="hidden" name="name" value="<%= doc.name %>">
-            <button type="submit" class="rounded bg-red-950 px-2 py-1 text-xs text-red-200 hover:bg-red-900">Löschen</button>
+            <button type="submit" class="rounded bg-red-950 px-2 py-1 text-xs text-red-200 hover:bg-red-900">Delete</button>
           </form>
         </li>
       <% }) %>
@@ -104,25 +104,25 @@
   <% } %>
 
   <div class="flex items-center justify-between gap-3">
-    <h2 class="text-sm uppercase tracking-wide text-neutral-500">Skizze</h2>
+    <h2 class="text-sm uppercase tracking-wide text-neutral-500">Sketch</h2>
     <% if (it.note.hasSketch) { %>
       <div class="flex items-center gap-2">
-        <a href="<%= base %>/sketch" class="rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500">Bearbeiten</a>
-        <form method="post" action="<%= base %>/sketch/delete" onsubmit="return confirm('Skizze löschen?')">
-          <button type="submit" class="rounded-xl bg-red-950 px-4 py-2 text-sm text-red-200 hover:bg-red-900">Löschen</button>
+        <a href="<%= base %>/sketch" class="rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500">Edit</a>
+        <form method="post" action="<%= base %>/sketch/delete" onsubmit="return confirm('Delete sketch?')">
+          <button type="submit" class="rounded-xl bg-red-950 px-4 py-2 text-sm text-red-200 hover:bg-red-900">Delete</button>
         </form>
       </div>
     <% } else { %>
-      <a href="<%= base %>/sketch" class="rounded-xl bg-neutral-800 px-4 py-2 text-sm font-medium hover:bg-neutral-700">Skizze erstellen</a>
+      <a href="<%= base %>/sketch" class="rounded-xl bg-neutral-800 px-4 py-2 text-sm font-medium hover:bg-neutral-700">Create sketch</a>
     <% } %>
   </div>
 
   <% if (it.note.hasSketch) { %>
     <a href="<%= base %>/sketch" class="block">
       <% if (it.note.hasSketchPreview) { %>
-        <img src="<%= base %>/sketch/preview" alt="Skizze" loading="lazy" class="h-44 w-full rounded-xl bg-neutral-900 object-contain ring-1 ring-neutral-700">
+        <img src="<%= base %>/sketch/preview" alt="Sketch" loading="lazy" class="h-44 w-full rounded-xl bg-neutral-900 object-contain ring-1 ring-neutral-700">
       <% } else { %>
-        <div class="flex h-20 items-center justify-center rounded-xl bg-neutral-900 text-sm text-neutral-500 ring-1 ring-neutral-700">Vorschau wird beim nächsten Speichern erzeugt</div>
+        <div class="flex h-20 items-center justify-center rounded-xl bg-neutral-900 text-sm text-neutral-500 ring-1 ring-neutral-700">Preview is generated on the next save</div>
       <% } %>
     </a>
   <% } %>
@@ -131,15 +131,15 @@
     <div class="whitespace-pre-line break-words text-base leading-relaxed"><%~ it.contentHtml %></div>
   <% } %>
 
-  <form method="post" action="<%= base %>/delete" onsubmit="return confirm('Notiz wirklich löschen? Alle Bilder und PDFs werden entfernt.')" class="pt-6">
-    <button type="submit" class="w-full rounded-xl bg-red-950 px-4 py-3 text-sm font-medium text-red-200 hover:bg-red-900">Notiz löschen</button>
+  <form method="post" action="<%= base %>/delete" onsubmit="return confirm('Really delete this note? All images and PDFs will be removed.')" class="pt-6">
+    <button type="submit" class="w-full rounded-xl bg-red-950 px-4 py-3 text-sm font-medium text-red-200 hover:bg-red-900">Delete note</button>
   </form>
 </section>
 
 <%~ include('partials/live-banner', {}) %>
 
 <dialog id="image-viewer"class="m-auto h-full max-h-none w-full max-w-none bg-black p-0 text-white backdrop:bg-black/95">
-  <button type="button" id="image-viewer-close" class="fixed right-3 top-3 z-10 rounded-full bg-neutral-800/80 px-3 py-1 text-xl" aria-label="Schließen">&times;</button>
+  <button type="button" id="image-viewer-close" class="fixed right-3 top-3 z-10 rounded-full bg-neutral-800/80 px-3 py-1 text-xl" aria-label="Close">&times;</button>
   <div class="flex h-full w-full items-center justify-center p-2">
     <img id="image-viewer-img" alt="" class="max-h-full max-w-full object-contain">
   </div>

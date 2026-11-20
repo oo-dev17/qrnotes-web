@@ -8,7 +8,7 @@ if (existsSync('.env')) {
 function required(name: string): string {
   const value = process.env[name];
   if (!value) {
-    throw new Error(`Umgebungsvariable fehlt: ${name}`);
+    throw new Error(`Missing environment variable: ${name}`);
   }
   return value;
 }

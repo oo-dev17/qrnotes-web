@@ -5,21 +5,21 @@
       <p class="text-sm text-neutral-400"><%= it.email %></p>
     </div>
     <div class="flex items-center gap-2">
-      <a href="/scan" class="rounded-xl bg-neutral-800 px-4 py-2 text-sm font-medium hover:bg-neutral-700">Scannen</a>
-      <a href="/notes/new" class="rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500">Neu</a>
+      <a href="/scan" class="rounded-xl bg-neutral-800 px-4 py-2 text-sm font-medium hover:bg-neutral-700">Scan</a>
+      <a href="/notes/new" class="rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500">New</a>
       <% const sortOptions = [
-        { value: 'date-desc', label: 'Datum: neueste zuerst' },
-        { value: 'date-asc', label: 'Datum: älteste zuerst' },
-        { value: 'name-asc', label: 'Name: A bis Z' },
+        { value: 'date-desc', label: 'Date: newest first' },
+        { value: 'date-asc', label: 'Date: oldest first' },
+        { value: 'name-asc', label: 'Name: A to Z' },
       ]; %>
       <details id="main-menu" class="relative">
         <summary
           class="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-xl bg-neutral-800 text-lg hover:bg-neutral-700 [&::-webkit-details-marker]:hidden"
-          aria-label="Menü"
+          aria-label="Menu"
         >&#9776;</summary>
         <div class="absolute right-0 z-20 mt-2 flex w-60 flex-col gap-1 rounded-xl bg-neutral-900 p-2 shadow-lg ring-1 ring-neutral-700">
           <fieldset class="flex flex-col gap-1">
-            <legend class="px-2 pb-1 text-xs uppercase tracking-wide text-neutral-500">Sortieren</legend>
+            <legend class="px-2 pb-1 text-xs uppercase tracking-wide text-neutral-500">Sort</legend>
             <% sortOptions.forEach(function (opt) { %>
               <label class="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-neutral-800">
                 <input
@@ -43,7 +43,7 @@
               id="logout-btn"
               type="button"
               class="w-full rounded-lg px-3 py-2 text-left text-sm text-red-300 hover:bg-neutral-800"
-            >Abmelden</button>
+            >Sign out</button>
           </div>
         </div>
       </details>
@@ -54,9 +54,9 @@
     <input
       type="search"
       name="q"
-      placeholder="Suchen"
+      placeholder="Search"
       autocomplete="off"
-      aria-label="Notizen suchen"
+      aria-label="Search notes"
       hx-get="/notes"
       hx-trigger="input changed delay:300ms, search"
       hx-target="#note-list"

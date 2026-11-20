@@ -16,7 +16,7 @@ const scanRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { return?: unknown } }>('/scan', async (request, reply) => {
     const returnTo = safeReturn(request.query.return);
     reply.type('text/html; charset=utf-8');
-    return render('scan', { title: 'Scannen', returnTo, cancelHref: returnTo || '/' });
+    return render('scan', { title: 'Scan', returnTo, cancelHref: returnTo || '/' });
   });
 
   // Result of a scan.
@@ -25,7 +25,7 @@ const scanRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { code?: unknown; return?: unknown } }>('/scan/result', async (request, reply) => {
     const code = typeof request.query.code === 'string' ? request.query.code.trim() : '';
     if (!code || code.length > QR_MAX) {
-      return reply.code(400).type('text/plain; charset=utf-8').send('Ungültiger Code');
+      return reply.code(400).type('text/plain; charset=utf-8').send('Invalid code');
     }
     const returnTo = safeReturn(request.query.return);
     if (returnTo) {

@@ -15,12 +15,12 @@ function setStatus(text: string): void {
 
 async function start(): Promise<void> {
   if (!window.isSecureContext) {
-    setStatus('Die Kamera braucht HTTPS. Bitte die App über die HTTPS-Adresse öffnen.');
+    setStatus('The camera requires HTTPS. Please open the app via the HTTPS address.');
     return;
   }
   const Detector = (window as unknown as { BarcodeDetector?: DetectorCtor }).BarcodeDetector;
   if (!Detector || !navigator.mediaDevices?.getUserMedia) {
-    setStatus('Dieser Browser kann keine Codes lesen. Bitte Chrome auf Android verwenden.');
+    setStatus('This browser cannot read codes. Please use Chrome on Android.');
     return;
   }
 
@@ -31,14 +31,14 @@ async function start(): Promise<void> {
       audio: false,
     });
   } catch {
-    setStatus('Kamera nicht verfügbar. Bitte die Kamera-Berechtigung prüfen.');
+    setStatus('Camera not available. Please check the camera permission.');
     return;
   }
 
   video.srcObject = stream;
   await video.play();
   const detector = new Detector({ formats: FORMATS });
-  setStatus('Code vor die Kamera halten …');
+  setStatus('Hold the code in front of the camera …');
 
   let busy = false;
   const timer = window.setInterval(async () => {
@@ -57,7 +57,7 @@ async function start(): Promise<void> {
         window.location.assign(`/scan/result?${params.toString()}`);
       }
     } catch (err) {
-      console.error('Scan fehlgeschlagen:', err);
+      console.error('Scan failed:', err);
     } finally {
       busy = false;
     }

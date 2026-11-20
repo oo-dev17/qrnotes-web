@@ -1,6 +1,6 @@
 // Warns when leaving a form with unsaved changes:
 // via the ← arrow in the app and via the browser/system back button.
-const WARNING = 'Ungespeicherte Änderungen verwerfen?';
+const WARNING = 'Discard unsaved changes?';
 
 const form = document.querySelector<HTMLFormElement>('form[data-note-form]');
 
