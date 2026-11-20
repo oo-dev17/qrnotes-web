@@ -3,7 +3,7 @@ import { adminAuth } from '../firebase.js';
 import { SESSION_COOKIE, SESSION_MAX_AGE_MS } from '../config.js';
 
 const authRoutes: FastifyPluginAsync = async (app) => {
-  // Tauscht ein Firebase-ID-Token gegen ein httpOnly-Session-Cookie (5 Tage).
+  // Exchanges a Firebase ID token for an httpOnly session cookie (5 days).
   app.post<{ Body: { idToken?: unknown } }>('/auth/session', async (request, reply) => {
     const idToken = request.body?.idToken;
     if (typeof idToken !== 'string' || idToken.length === 0) {

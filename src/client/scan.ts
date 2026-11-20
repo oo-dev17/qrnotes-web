@@ -1,4 +1,4 @@
-// QR- und Barcode-Scanner über die Kamera. Nur Chrome/Android (BarcodeDetector), HTTPS nötig.
+// QR and barcode scanner using the camera. Chrome/Android only (BarcodeDetector), HTTPS required.
 type Detection = { rawValue: string };
 type Detector = { detect(source: CanvasImageSource): Promise<Detection[]> };
 type DetectorCtor = new (options: { formats: string[] }) => Detector;

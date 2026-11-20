@@ -7,10 +7,10 @@ export function escapeHtml(text: string): string {
     .replace(/'/g, '&#39;');
 }
 
-// Escaped zuerst, dann nur http(s)-Links ersetzen. So kann Notiztext kein HTML einschleusen.
+// Escape first, then replace only http(s) links. This way note text cannot inject HTML.
 export function linkifyText(text: string): string {
   return escapeHtml(text).replace(/https?:\/\/[^\s<>]+/g, (raw) => {
-    // Satzzeichen direkt hinter der URL gehört nicht zum Link.
+    // Punctuation directly after the URL is not part of the link.
     const trail = raw.match(/(?:&quot;|&#39;|&lt;|&gt;|[.,;:!?)\]])+$/);
     const url = trail ? raw.slice(0, raw.length - trail[0].length) : raw;
     const rest = trail ? trail[0] : '';

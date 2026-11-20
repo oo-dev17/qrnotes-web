@@ -12,14 +12,14 @@ import {
   SKETCH_MAX_BYTES,
 } from '../services/sketch.js';
 
-// Die Skizze liegt als Konva-JSON im Storage. Der Editor läuft im Browser (src/client/sketch.ts).
+// The sketch is stored as Konva JSON in Storage. The editor runs in the browser (src/client/sketch.ts).
 const sketchRoutes: FastifyPluginAsync = async (app) => {
-  // PNG-Vorschau kommt als Rohdaten (image/png), nicht als JSON.
+  // PNG preview comes as raw data (image/png), not as JSON.
   app.addContentTypeParser('image/png', { parseAs: 'buffer', bodyLimit: PREVIEW_MAX_BYTES }, (_req, body, done) => {
     done(null, body);
   });
 
-  // Vorschau-Bild für die Detailseite
+  // Preview image for the detail page
   app.get<{ Params: { id: string } }>('/notes/:id/sketch/preview', async (request, reply) => {
     let png: Buffer | null;
     try {
@@ -50,7 +50,7 @@ const sketchRoutes: FastifyPluginAsync = async (app) => {
     return reply.code(204).send();
   });
 
-  // Editor: lädt die vorhandene Skizze (oder eine leere).
+  // Editor: loads the existing sketch (or an empty one).
   app.get<{ Params: { id: string } }>('/notes/:id/sketch', async (request, reply) => {
     const id = request.params.id;
     let sketch: string | null;
@@ -71,7 +71,7 @@ const sketchRoutes: FastifyPluginAsync = async (app) => {
     });
   });
 
-  // Speichern: der Browser schickt das Konva-Layer-JSON.
+  // Save: the browser sends the Konva layer JSON.
   app.put<{ Params: { id: string } }>(
     '/notes/:id/sketch',
     { bodyLimit: SKETCH_MAX_BYTES },
@@ -91,7 +91,7 @@ const sketchRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  // Löschen (Formular auf der Detailseite)
+  // Delete (form on the detail page)
   app.post<{ Params: { id: string } }>('/notes/:id/sketch/delete', async (request, reply) => {
     const id = request.params.id;
     try {

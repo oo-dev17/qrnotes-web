@@ -4,7 +4,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { config } from './config.js';
 
-// Liest die Service-Account-Datei über GOOGLE_APPLICATION_CREDENTIALS.
+// Reads the service account file via GOOGLE_APPLICATION_CREDENTIALS.
 if (getApps().length === 0) {
   initializeApp({
     credential: applicationDefault(),

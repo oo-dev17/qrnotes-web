@@ -9,7 +9,7 @@ export interface NoteSummary {
   qrCode: string;
   creationDate: number;
   thumbUrl: string | null;
-  fp: string; // Fingerprint der Firestore-Felder (siehe fingerprint.ts)
+  fp: string; // Fingerprint of the Firestore fields (see fingerprint.ts)
 }
 
 export interface StoredFile {
@@ -23,13 +23,13 @@ export interface NoteDetail {
   title: string;
   content: string;
   qrCode: string;
-  images: StoredFile[]; // nach Aufnahmezeit, älteste zuerst
+  images: StoredFile[]; // by capture time, oldest first
   documents: StoredFile[];
-  coverName: string | null; // galleryPic, sonst das älteste Bild
-  staleCover: string | null; // galleryPic, dessen Datei fehlt (Verweis ist kaputt)
-  fingerprint: string; // Firestore-Felder der Notiz (siehe fingerprint.ts)
-  hasSketch: boolean; // {docId}/Sketch/sketch.json vorhanden
-  hasSketchPreview: boolean; // {docId}/Sketch/preview.png vorhanden
+  coverName: string | null; // galleryPic, otherwise the oldest image
+  staleCover: string | null; // galleryPic whose file is missing (broken reference)
+  fingerprint: string; // Firestore fields of the note (see fingerprint.ts)
+  hasSketch: boolean; // {docId}/Sketch/sketch.json exists
+  hasSketchPreview: boolean; // {docId}/Sketch/preview.png exists
 }
 
 export class NoteNotFoundError extends Error {
@@ -49,7 +49,7 @@ interface Cached<T> {
   value: T;
 }
 
-// Pro Nutzer: Liste (für Suche) und pro Notiz: Detail. Änderungen invalidieren über invalidateNote().
+// Per user: list (for search) and per note: detail. Changes invalidate via invalidateNote().
 const listCache = new Map<string, Cached<NoteSummary[]>>();
 const detailCache = new Map<string, Cached<NoteDetail>>();
 
@@ -57,7 +57,7 @@ export function notesCollection(uid: string) {
   return db.collection('users').doc(uid).collection('qrNotes');
 }
 
-// Prüft Existenz und Besitz (Pfad enthält die uid). Nur danach darf auf Storage zugegriffen werden.
+// Checks existence and ownership (path contains the uid). Only after that may Storage be accessed.
 export async function requireNoteRef(uid: string, id: string): Promise<DocumentReference> {
   if (!VALID_ID.test(id)) throw new NoteNotFoundError();
   const ref = notesCollection(uid).doc(id);
@@ -92,8 +92,8 @@ async function signedUrl(file: StorageFile): Promise<string> {
   return url;
 }
 
-// Liste: galleryPic, wenn die Datei existiert; sonst das älteste Bild (wie auf der Detailseite).
-// Liefert die App-eigene Thumbnail-Route (gecacht im Browser und in Storage), keine Vollbild-URL.
+// List: galleryPic if the file exists; otherwise the oldest image (same as on the detail page).
+// Returns the app's own thumbnail route (cached in the browser and in Storage), not a full-size URL.
 async function listThumbUrl(id: string, galleryPic: string): Promise<string | null> {
   const images = await listImages(id);
   if (images.length === 0) return null;
@@ -117,7 +117,7 @@ async function loadNotes(uid: string): Promise<NoteSummary[]> {
         return {
           id: doc.id,
           title: typeof data.title === 'string' ? data.title : '',
-          // Fehlt documentId, zeigt die Android-App die Dokument-ID; so auch hier.
+          // If documentId is missing, the Android app shows the document ID; we do the same here.
           documentId: typeof data.documentId === 'string' && data.documentId ? data.documentId : doc.id,
           qrCode: typeof data.qrCode === 'string' ? data.qrCode : '',
           creationDate: typeof data.creationDate === 'number' ? data.creationDate : 0,
@@ -155,7 +155,7 @@ function sortNotes(notes: NoteSummary[], sort: SortOrder): NoteSummary[] {
     case 'date-asc':
       return copy.sort((a, b) => a.creationDate - b.creationDate);
     case 'name-asc':
-      // Ohne Titel ans Ende.
+      // Notes without a title go to the end.
       return copy.sort((a, b) => {
         if (!a.title !== !b.title) return a.title ? -1 : 1;
         return a.title.localeCompare(b.title, 'de', { sensitivity: 'base' });
@@ -166,7 +166,7 @@ function sortNotes(notes: NoteSummary[], sort: SortOrder): NoteSummary[] {
   }
 }
 
-// Filtert über Titel, documentId und qrCode (ohne Groß-/Kleinschreibung) und sortiert danach.
+// Filters by title, documentId and qrCode (case-insensitive) and sorts afterwards.
 export async function searchNotes(
   uid: string,
   query: string,
@@ -185,13 +185,13 @@ export async function searchNotes(
   return sortNotes(matches, sort);
 }
 
-// Fingerprint der gesamten Liste (alle Notizen, unabhängig von der Suche).
+// Fingerprint of the whole list (all notes, regardless of search).
 export async function listFingerprintFor(uid: string): Promise<string> {
   const notes = await getAllNotes(uid);
   return listFingerprint(notes.map((n) => [n.id, n.fp]));
 }
 
-// Dateien einer Notiz als Schlüssel („I/name“ = Bild, „D/name“ = PDF), für den Live-Vergleich.
+// Files of a note as keys ('I/name' = image, 'D/name' = PDF), for the live comparison.
 export function fileKeys(
   images: { name: string }[],
   documents: { name: string }[],
@@ -202,7 +202,7 @@ export function fileKeys(
   return keys.sort();
 }
 
-// Liest die Dateien direkt aus Storage (ohne Cache). Nur nach Besitzprüfung aufrufen.
+// Reads the files directly from Storage (no cache). Only call after the ownership check.
 export async function listFileKeys(id: string): Promise<string[]> {
   const [images] = await bucket.getFiles({ prefix: `${id}/Images/` });
   const [documents] = await bucket.getFiles({ prefix: `${id}/Documents/` });
@@ -218,7 +218,7 @@ export async function listFileKeys(id: string): Promise<string[]> {
   );
 }
 
-// Exakter Treffer auf qrCode (für den Scanner). Bei mehreren Treffern gewinnt die neueste Notiz.
+// Exact match on qrCode (for the scanner). With multiple matches, the newest note wins.
 export async function findNoteByQrCode(
   uid: string,
   code: string,
@@ -244,7 +244,7 @@ async function listDocuments(id: string): Promise<StoredFile[]> {
   );
 }
 
-// Detailseite. Gecacht; die Existenzprüfung läuft beim Laden, Schreibzugriffe invalidieren den Eintrag.
+// Detail page. Cached; the existence check runs on load, write access invalidates the entry.
 export async function getNoteDetail(uid: string, id: string): Promise<NoteDetail | null> {
   if (!VALID_ID.test(id)) return null;
   const key = `${uid}/${id}`;
@@ -258,7 +258,7 @@ export async function getNoteDetail(uid: string, id: string): Promise<NoteDetail
   const data = snap.data()!;
   const galleryPic = typeof data.galleryPic === 'string' ? data.galleryPic : '';
 
-  // Storage erst nach der Existenzprüfung oben.
+  // Storage only after the existence check above.
   const imageFiles = await listImages(id);
   const images: StoredFile[] = await Promise.all(
     imageFiles.map(async (file) => ({

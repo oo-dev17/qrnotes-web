@@ -10,8 +10,8 @@ declare module 'fastify' {
   }
 }
 
-// Öffentlich: Login-Seite, alle /auth/*-Routen und statische Dateien
-// (ohne die Dateien kann die Login-Seite nicht geladen werden).
+// Public: login page, all /auth/* routes and static files
+// (without these files the login page cannot load).
 function isPublic(pathname: string): boolean {
   return (
     pathname === '/login' ||
@@ -22,7 +22,7 @@ function isPublic(pathname: string): boolean {
 
 function unauthenticated(request: FastifyRequest, reply: FastifyReply) {
   reply.clearCookie(SESSION_COOKIE, { path: '/' });
-  // HTML-Aufrufe zur Login-Seite leiten, API-artige Aufrufe mit 401 beantworten.
+  // Redirect HTML requests to the login page, answer API-style requests with 401.
   if (request.headers.accept?.includes('text/html')) {
     return reply.redirect('/login');
   }
@@ -38,7 +38,7 @@ const authPlugin: FastifyPluginAsync = async (app) => {
     if (!cookie) return unauthenticated(request, reply);
 
     try {
-      // checkRevoked=true: nach Revoke im Firebase-Admin wird das Cookie sofort ungültig.
+      // checkRevoked=true: after a revoke in the Firebase Admin, the cookie becomes invalid immediately.
       const decoded = await adminAuth.verifySessionCookie(cookie, true);
       request.uid = decoded.uid;
       request.email = decoded.email;

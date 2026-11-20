@@ -37,10 +37,10 @@ function formString(body: unknown, key: string): string {
 
 const str = (value: unknown): string => (typeof value === 'string' ? value : '');
 
-// Zeilenenden und äußere Leerzeichen angleichen, bevor Texte verglichen werden.
+// Normalize line endings and outer whitespace before comparing texts.
 const normalizeText = (s: string): string => s.replace(/\r\n/g, '\n').trim();
 
-// Gibt die Felder zurück oder eine Fehlermeldung.
+// Returns the fields or an error message.
 function parseNoteFields(body: unknown): { fields: NoteFields; error?: string } {
   const fields: NoteFields = {
     title: formString(body, 'title').trim(),
@@ -54,7 +54,7 @@ function parseNoteFields(body: unknown): { fields: NoteFields; error?: string } 
   return { fields };
 }
 
-// Fehler beim Hochladen zurück auf die Detailseite, dort als Meldung anzeigen.
+// Upload errors go back to the detail page and are shown there as a message.
 function uploadError(reply: FastifyReply, id: string, err: unknown) {
   if (err instanceof InvalidInputError) {
     return reply
@@ -75,7 +75,7 @@ function sendError(reply: FastifyReply, err: unknown) {
 }
 
 const notesRoutes: FastifyPluginAsync = async (app) => {
-  // htmx-Endpunkt: liefert nur die Notizliste für das Suchfeld.
+  // htmx endpoint: returns only the note list for the search field.
   app.get<{ Querystring: { q?: unknown; sort?: unknown } }>('/notes', async (request, reply) => {
     const q = typeof request.query.q === 'string' ? request.query.q : '';
     const notes = await searchNotes(request.uid!, q, parseSort(request.query.sort));
@@ -83,8 +83,8 @@ const notesRoutes: FastifyPluginAsync = async (app) => {
     return renderPartial('partials/note-list', { notes });
   });
 
-  // Anlegen
-  // ?qrCode=… kommt vom Scanner, wenn zu dem Code noch keine Notiz existiert.
+  // Create
+  // ?qrCode=… comes from the scanner when no note exists for that code yet.
   app.get<{ Querystring: { qrCode?: unknown } }>('/notes/new', async (request, reply) => {
     const qrCode = typeof request.query.qrCode === 'string' ? request.query.qrCode.slice(0, 200) : '';
     const hit = qrCode ? await findNoteByQrCode(request.uid!, qrCode) : null;
@@ -117,11 +117,11 @@ const notesRoutes: FastifyPluginAsync = async (app) => {
     return reply.code(303).redirect(`/notes/${encodeURIComponent(id)}`);
   });
 
-  // Thumbnail eines Bildes (klein, gecacht). Vollbild lädt die Lightbox über die Signed URL.
+  // Thumbnail of an image (small, cached). The lightbox loads the full image via the signed URL.
   app.get<{ Params: { id: string; name: string } }>('/notes/:id/thumb/:name', async (request, reply) => {
     try {
       const img = await getThumb(request.uid!, request.params.id, request.params.name);
-      // Eigene URL pro Bild, daher darf der Browser sie einen Tag lang behalten.
+      // Own URL per image, so the browser may keep it for one day.
       reply.header('Cache-Control', 'private, max-age=86400');
       return reply.type(img.contentType).send(img.body);
     } catch (err) {
@@ -132,7 +132,7 @@ const notesRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  // Detailseite: Text, Bildergalerie, PDFs.
+  // Detail page: text, image gallery, PDFs.
   app.get<{ Params: { id: string }; Querystring: { fehler?: unknown } }>(
     '/notes/:id',
     async (request, reply) => {
@@ -152,8 +152,8 @@ const notesRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  // Bearbeiten
-  // ?qrCode=… kommt vom Scanner („Scannen“ im Formular): der gescannte Code ersetzt den Wert im Feld.
+  // Edit
+  // ?qrCode=… comes from the scanner ('Scan' in the form): the scanned code replaces the value in the field.
   app.get<{ Params: { id: string }; Querystring: { qrCode?: unknown } }>(
     '/notes/:id/edit',
     async (request, reply) => {
@@ -162,7 +162,7 @@ const notesRoutes: FastifyPluginAsync = async (app) => {
         return reply.code(404).type('text/plain; charset=utf-8').send('Notiz nicht gefunden');
       }
       const scanned = str(request.query.qrCode).trim().slice(0, 200);
-      // Gehört der gescannte Code schon einer anderen Notiz? Dann wird deren Name genannt.
+      // Does the scanned code already belong to another note? Then that note's name is shown.
       const hit =
         scanned && scanned !== note.qrCode
           ? await findNoteByQrCode(request.uid!, scanned, note.id)
@@ -207,7 +207,7 @@ const notesRoutes: FastifyPluginAsync = async (app) => {
         error,
       });
     }
-    // Konflikt-Check: Hat sich die Notiz seit dem Laden des Formulars geändert (z. B. in der Android-App)?
+    // Conflict check: has the note changed since the form was loaded (e.g. in the Android app)?
     const body = request.body as Record<string, unknown> | undefined;
     if (body && body.origTitle !== undefined) {
       let stored: NoteFields;
@@ -255,7 +255,7 @@ const notesRoutes: FastifyPluginAsync = async (app) => {
     return reply.code(303).redirect(`/notes/${encodeURIComponent(id)}`);
   });
 
-  // Löschen
+  // Delete
   app.post<{ Params: { id: string } }>('/notes/:id/delete', async (request, reply) => {
     try {
       await deleteNote(request.uid!, request.params.id);
@@ -265,7 +265,7 @@ const notesRoutes: FastifyPluginAsync = async (app) => {
     return reply.code(303).redirect('/');
   });
 
-  // Bilder hochladen (ein oder mehrere Dateien)
+  // Upload images (one or more files)
   app.post<{ Params: { id: string } }>('/notes/:id/images', async (request, reply) => {
     const id = request.params.id;
     try {
@@ -279,7 +279,7 @@ const notesRoutes: FastifyPluginAsync = async (app) => {
     return reply.code(303).redirect(`/notes/${encodeURIComponent(id)}`);
   });
 
-  // Bild löschen
+  // Delete image
   app.post<{ Params: { id: string } }>('/notes/:id/images/delete', async (request, reply) => {
     const id = request.params.id;
     try {
@@ -290,7 +290,7 @@ const notesRoutes: FastifyPluginAsync = async (app) => {
     return reply.code(303).redirect(`/notes/${encodeURIComponent(id)}`);
   });
 
-  // Titelbild (galleryPic) setzen
+  // Set cover image (galleryPic)
   app.post<{ Params: { id: string } }>('/notes/:id/images/cover', async (request, reply) => {
     const id = request.params.id;
     try {
@@ -301,7 +301,7 @@ const notesRoutes: FastifyPluginAsync = async (app) => {
     return reply.code(303).redirect(`/notes/${encodeURIComponent(id)}`);
   });
 
-  // Kaputten Titelbild-Verweis entfernen (Antwort auf die Rückfrage in der Detailseite)
+  // Remove broken cover image reference (answer to the prompt on the detail page)
   app.post<{ Params: { id: string } }>('/notes/:id/cover/clear', async (request, reply) => {
     const id = request.params.id;
     try {
@@ -312,7 +312,7 @@ const notesRoutes: FastifyPluginAsync = async (app) => {
     return reply.code(303).redirect(`/notes/${encodeURIComponent(id)}`);
   });
 
-  // PDFs hochladen
+  // Upload PDFs
   app.post<{ Params: { id: string } }>('/notes/:id/documents', async (request, reply) => {
     const id = request.params.id;
     const log = request.log.child({ upload: 'pdf', noteId: id });
@@ -338,7 +338,7 @@ const notesRoutes: FastifyPluginAsync = async (app) => {
     return reply.code(303).redirect(`/notes/${encodeURIComponent(id)}`);
   });
 
-  // PDF löschen
+  // Delete PDF
   app.post<{ Params: { id: string } }>('/notes/:id/documents/delete', async (request, reply) => {
     const id = request.params.id;
     try {
