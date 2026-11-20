@@ -1,4 +1,4 @@
-# Build-Stufe: Dev-Abhängigkeiten (tsc, tailwind, esbuild) für Build nötig
+# Build stage: dev dependencies (tsc, tailwind, esbuild) are needed for the build
 FROM node:22-bookworm-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
@@ -6,7 +6,7 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-# Laufzeit-Stufe: nur Produktions-Abhängigkeiten und gebaute Dateien
+# Runtime stage: production dependencies and built files only
 FROM node:22-bookworm-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
