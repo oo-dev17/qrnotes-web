@@ -57,7 +57,7 @@
             <% if (img.name === it.note.coverName) { %>
               <span class="rounded bg-violet-700 px-2 py-1 font-semibold text-white">Cover image</span>
             <% } %>
-            <details class="ml-auto">
+            <details class="js-image-menu ml-auto">
               <summary
                 class="flex h-7 w-7 cursor-pointer list-none items-center justify-center rounded-full bg-neutral-800 text-base hover:bg-neutral-700 [&::-webkit-details-marker]:hidden"
                 aria-label="Image menu"
@@ -82,7 +82,7 @@
   </div>
 
   <div class="flex items-center justify-between">
-    <h2 class="text-sm uppercase tracking-wide text-neutral-500">PDFs</h2>
+    <h2 class="text-lg font-semibold text-neutral-500">PDFs</h2>
     <%~ include('partials/upload-control', { action: base + '/documents', accept: 'application/pdf,.pdf', tile: false, label: '+ PDF' }) %>
   </div>
 
@@ -104,12 +104,16 @@
   <% } %>
 
   <div class="flex items-center justify-between gap-3">
-    <h2 class="text-sm uppercase tracking-wide text-neutral-500">Sketch</h2>
+    <h2 class="text-lg font-semibold text-neutral-500">Sketch</h2>
     <% if (it.note.hasSketch) { %>
       <div class="flex items-center gap-2">
-        <a href="<%= base %>/sketch" class="rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500">Edit</a>
+        <a href="<%= base %>/sketch" class="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-600 text-white hover:bg-violet-500" title="Edit sketch" aria-label="Edit sketch">
+          <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>
+        </a>
         <form method="post" action="<%= base %>/sketch/delete" onsubmit="return confirm('Delete sketch?')">
-          <button type="submit" class="rounded-xl bg-red-950 px-4 py-2 text-sm text-red-200 hover:bg-red-900">Delete</button>
+          <button type="submit" class="flex h-11 w-11 items-center justify-center rounded-xl bg-red-950 text-red-200 hover:bg-red-900" title="Delete sketch" aria-label="Delete sketch">
+            <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>
+          </button>
         </form>
       </div>
     <% } else { %>

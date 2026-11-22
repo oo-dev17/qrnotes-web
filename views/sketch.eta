@@ -33,7 +33,7 @@
     </label>
     <div id="sketch-width-wrap" class="relative">
       <button id="sketch-width" type="button" class="flex h-11 w-11 items-center justify-center rounded-xl bg-neutral-800 hover:bg-neutral-700" title="Line width" aria-label="Line width">
-        <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M4 8h16" stroke-width="1.5"/><path d="M4 13h16" stroke-width="4"/><path d="M4 19h16" stroke-width="8"/></svg>
+        <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M4 4h16" stroke-width="1.5"/><path d="M4 11.5h16" stroke-width="4"/><path d="M4 19.5h16" stroke-width="7"/></svg>
       </button>
       <div id="sketch-width-menu" hidden class="absolute left-0 top-full z-50 mt-1 rounded-xl bg-neutral-900 p-1 shadow-lg ring-1 ring-neutral-700">
         <!-- No display class on this element: "hidden" must work. The list inside is the flex container. -->

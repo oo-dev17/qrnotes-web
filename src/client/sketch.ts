@@ -170,7 +170,7 @@ function restoreFromJson(json: string): void {
   select(null);
   layer.destroyChildren();
   [...source.getChildren()].forEach((node) => layer.add(node));
-  layer.getChildren().forEach((node) => node.draggable(tool === 'select'));
+  updateDraggable();
   layer.batchDraw();
 }
 
@@ -222,9 +222,14 @@ function setTool(next: Tool): void {
     btn.classList.toggle('text-white', active);
     btn.classList.toggle('bg-neutral-800', !active);
   });
-  // Move only in selection mode, otherwise you would draw over the objects.
-  layer.getChildren().forEach((node) => node.draggable(next === 'select'));
   if (next !== 'select') select(null);
+  updateDraggable();
+}
+
+// Only the selected object can be moved by dragging. Pressing an unselected object never moves it
+// (it is selected on release instead). Outside selection mode nothing moves, so you don't draw over objects.
+function updateDraggable(): void {
+  layer.getChildren().forEach((node) => node.draggable(tool === 'select' && node === selected));
 }
 
 // Straight lines are not scaled with the box transformer (that would stretch them like a rectangle).
@@ -238,36 +243,21 @@ let hitLine: Konva.Line | null = null;
 
 function clearLineHandles(): void {
   lineHandles.splice(0).forEach((h) => h.destroy());
-  if (hitLine) hitLine.setAttr('hitFunc', undefined); // back to the normal stroke hit area
+  if (hitLine) hitLine.hitStrokeWidth('auto'); // back to the normal stroke hit area
   hitLine = null;
 }
 
-// Mouse down anywhere in the rectangle around the selected line (straight or freehand) grabs it for moving.
-function setBoxHitArea(line: Konva.Line): void {
+// Hit band around the selected line (straight or freehand) in screen pixels: it grabs the line for moving,
+// but only close to the stroke. (The earlier whole-bounding-box area blocked clicks on objects inside the box.)
+const LINE_HIT_SCREEN_PX = 16;
+function setLineHitArea(line: Konva.Line): void {
   clearLineHandles();
   hitLine = line;
-  line.hitFunc((context) => {
-    const p = line.points();
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
-    for (let i = 0; i < p.length; i += 2) {
-      minX = Math.min(minX, p[i]);
-      maxX = Math.max(maxX, p[i]);
-      minY = Math.min(minY, p[i + 1]);
-      maxY = Math.max(maxY, p[i + 1]);
-    }
-    const pad = Math.max(8, line.strokeWidth());
-    context.beginPath();
-    context.rect(minX - pad, minY - pad, maxX - minX + pad * 2, maxY - minY + pad * 2);
-    context.closePath();
-    context.fillStrokeShape(line);
-  });
+  line.hitStrokeWidth(Math.max(line.strokeWidth(), LINE_HIT_SCREEN_PX / stage.scaleX()));
 }
 
 function showLineHandles(line: Konva.Line): void {
-  setBoxHitArea(line);
+  setLineHitArea(line);
   for (let i = 0; i < 2; i++) {
     const handle = new Konva.Circle({
       radius: 9,
@@ -303,9 +293,10 @@ function placeLineHandles(line: Konva.Line): void {
 
 function select(node: Konva.Node | null): void {
   selected = node;
+  updateDraggable();
   transformer.nodes(node && !isStraight(node) ? [node] : []);
   if (isStraight(node)) showLineHandles(node);
-  else if (node instanceof Konva.Line) setBoxHitArea(node);
+  else if (node instanceof Konva.Line) setLineHitArea(node);
   else clearLineHandles();
   if (node) colorInput.value = toHex(colorOf(node)) ?? colorInput.value;
   if (node instanceof Konva.Shape) currentWidth = node.strokeWidth();
@@ -418,7 +409,7 @@ stage.on('pointerdown', (e) => {
   if (e.target.getLayer() === uiLayer) return;
 
   if (tool === 'select') {
-    // Selection changes on release (click without drag), not on press. A drag selects in dragstart.
+    // Selection changes only on release, never on press or during a drag. Only the selected object can be dragged.
     pendingClick = { target: e.target === stage ? null : e.target };
     return;
   }
@@ -516,11 +507,16 @@ stage.on('pointerleave', () => {
   pendingClick = null;
 });
 
-// Dragging an object selects it (but not on a mere press).
-stage.on('dragstart', (e) => {
-  if (e.target.getLayer() === uiLayer) return; // selection handles
-  pendingClick = null;
-  select(e.target);
+// Double click (or double tap) on a text in selection mode opens it for editing, like creating one.
+stage.on('dblclick dbltap', (e) => {
+  const target = e.target;
+  if (tool !== 'select' || !(target instanceof Konva.Text)) return;
+  const text = window.prompt('Edit text', target.text());
+  if (!text || text === target.text()) return;
+  target.text(text);
+  select(target);
+  layer.batchDraw();
+  markDirty();
 });
 
 // ---------- Zoom: mouse wheel / trackpad pinch, and two-finger pinch on touch ----------
@@ -751,7 +747,9 @@ document.addEventListener('pointerdown', (event) => {
   if (!menuEl.contains(event.target as Node)) hideMenu();
 });
 window.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') hideMenu();
+  if (e.key !== 'Escape') return;
+  hideMenu();
+  if (tool !== 'select') setTool('select');
 });
 undoBtn.addEventListener('click', undo);
 redoBtn.addEventListener('click', redo);
