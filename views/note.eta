@@ -7,7 +7,7 @@
 >
   <header class="flex items-center justify-between gap-3">
     <div class="flex items-center gap-3">
-      <a href="/" class="-ml-2 rounded-full px-2 py-1 text-2xl text-neutral-300 hover:bg-neutral-900" aria-label="Back">&larr;</a>
+      <a href="/" class="flex h-11 w-11 items-center justify-center rounded-xl border border-neutral-600 bg-neutral-800 text-2xl text-neutral-200 hover:bg-neutral-700" aria-label="Back">&larr;</a>
       <span class="text-sm text-neutral-400">QrNotes</span>
     </div>
     <a href="<%= base %>/edit" class="rounded-xl bg-neutral-800 px-4 py-2 text-sm font-medium hover:bg-neutral-700">Edit</a>
@@ -35,7 +35,7 @@
     </div>
   <% } %>
 
-  <div class="-mx-6 flex snap-x gap-3 overflow-x-auto px-6 pb-2">
+  <div class="-mx-6 flex snap-x scroll-px-6 gap-3 overflow-x-auto px-6 pb-2">
       <% it.note.images.forEach(function (img) { %>
         <figure class="flex w-32 shrink-0 snap-start flex-col gap-2">
           <button
@@ -120,9 +120,9 @@
   <% if (it.note.hasSketch) { %>
     <a href="<%= base %>/sketch" class="block">
       <% if (it.note.hasSketchPreview) { %>
-        <img src="<%= base %>/sketch/preview" alt="Sketch" loading="lazy" class="h-44 w-full rounded-xl bg-neutral-900 object-contain ring-1 ring-neutral-700">
+        <img src="<%= base %>/sketch/preview" alt="Sketch" loading="lazy" class="h-72 w-full rounded-xl border-2 border-neutral-600 bg-neutral-900 object-contain p-2">
       <% } else { %>
-        <div class="flex h-20 items-center justify-center rounded-xl bg-neutral-900 text-sm text-neutral-500 ring-1 ring-neutral-700">Preview is generated on the next save</div>
+        <div class="flex h-20 items-center justify-center rounded-xl border-2 border-neutral-600 bg-neutral-900 text-sm text-neutral-500">Preview is generated on the next save</div>
       <% } %>
     </a>
   <% } %>
