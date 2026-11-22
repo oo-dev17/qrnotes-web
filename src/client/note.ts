@@ -38,6 +38,14 @@ document.querySelectorAll<HTMLInputElement>('input.js-autoupload').forEach((inpu
   });
 });
 
+// Image menu (⋮): a press anywhere outside an open menu closes it.
+document.addEventListener('pointerdown', (event) => {
+  const target = event.target as Node;
+  document.querySelectorAll<HTMLDetailsElement>('details.js-image-menu[open]').forEach((menu) => {
+    if (!menu.contains(target)) menu.open = false;
+  });
+});
+
 // Fullscreen view for images on the detail page.
 const viewer = document.getElementById('image-viewer') as HTMLDialogElement | null;
 const viewerImg = document.getElementById('image-viewer-img') as HTMLImageElement | null;
