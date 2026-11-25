@@ -9,6 +9,10 @@ export interface NoteSummary {
   qrCode: string;
   creationDate: number;
   thumbUrl: string | null;
+  imageCount: number;
+  pdfCount: number;
+  content: string; // full text, used for the search only (not rendered in the list)
+  excerpt: string; // first 10 characters of the text, whitespace collapsed
   fp: string; // Fingerprint of the Firestore fields (see fingerprint.ts)
 }
 
@@ -92,10 +96,15 @@ async function signedUrl(file: StorageFile): Promise<string> {
   return url;
 }
 
+// First 10 characters of the text for the list (code points, so emoji are not split).
+function excerptOf(content: string): string {
+  const chars = [...content.replace(/\s+/g, ' ').trim()];
+  return chars.length > 10 ? chars.slice(0, 10).join('') + '…' : chars.join('');
+}
+
 // List: galleryPic if the file exists; otherwise the oldest image (same as on the detail page).
 // Returns the app's own thumbnail route (cached in the browser and in Storage), not a full-size URL.
-async function listThumbUrl(id: string, galleryPic: string): Promise<string | null> {
-  const images = await listImages(id);
+function listThumbUrl(id: string, images: StorageFile[], galleryPic: string): string | null {
   if (images.length === 0) return null;
   const cover = images.find((f) => f.name === `${id}/Images/${galleryPic}`)
     ?? images.reduce((a, b) => (timeOf(b) < timeOf(a) ? b : a));
@@ -114,6 +123,12 @@ async function loadNotes(uid: string): Promise<NoteSummary[]> {
       .map(async (doc): Promise<NoteSummary> => {
         const data = doc.data();
         const galleryPic = typeof data.galleryPic === 'string' ? data.galleryPic : '';
+        const content = typeof data.content === 'string' ? data.content : '';
+        // Storage listing (not cached per note; the list itself is cached for LIST_TTL_MS).
+        const [images, documents] = await Promise.all([
+          listImages(doc.id),
+          listDocumentFiles(doc.id),
+        ]);
         return {
           id: doc.id,
           title: typeof data.title === 'string' ? data.title : '',
@@ -121,7 +136,11 @@ async function loadNotes(uid: string): Promise<NoteSummary[]> {
           documentId: typeof data.documentId === 'string' && data.documentId ? data.documentId : doc.id,
           qrCode: typeof data.qrCode === 'string' ? data.qrCode : '',
           creationDate: typeof data.creationDate === 'number' ? data.creationDate : 0,
-          thumbUrl: await listThumbUrl(doc.id, galleryPic),
+          thumbUrl: listThumbUrl(doc.id, images, galleryPic),
+          imageCount: images.length,
+          pdfCount: documents.length,
+          content,
+          excerpt: excerptOf(content),
           fp: fingerprint(data),
         };
       }),
@@ -166,7 +185,7 @@ function sortNotes(notes: NoteSummary[], sort: SortOrder): NoteSummary[] {
   }
 }
 
-// Filters by title, documentId and qrCode (case-insensitive) and sorts afterwards.
+// Filters by title, text, documentId and qrCode (case-insensitive) and sorts afterwards.
 export async function searchNotes(
   uid: string,
   query: string,
@@ -178,6 +197,7 @@ export async function searchNotes(
     ? notes.filter(
         (n) =>
           n.title.toLowerCase().includes(q) ||
+          n.content.toLowerCase().includes(q) ||
           n.documentId.toLowerCase().includes(q) ||
           n.qrCode.toLowerCase().includes(q),
       )
@@ -230,17 +250,20 @@ export async function findNoteByQrCode(
   return notes.find((n) => n.qrCode === value && n.id !== exceptId) ?? null;
 }
 
+async function listDocumentFiles(id: string): Promise<StorageFile[]> {
+  const [files] = await bucket.getFiles({ prefix: `${id}/Documents/` });
+  return files.filter((f) => !f.name.endsWith('/'));
+}
+
 async function listDocuments(id: string): Promise<StoredFile[]> {
   const prefix = `${id}/Documents/`;
-  const [files] = await bucket.getFiles({ prefix });
+  const files = await listDocumentFiles(id);
   return Promise.all(
-    files
-      .filter((f) => !f.name.endsWith('/'))
-      .map(async (file) => ({
-        name: file.name.slice(prefix.length),
-        url: await signedUrl(file),
-        timeCreated: timeOf(file),
-      })),
+    files.map(async (file) => ({
+      name: file.name.slice(prefix.length),
+      url: await signedUrl(file),
+      timeCreated: timeOf(file),
+    })),
   );
 }
 
