@@ -2,7 +2,7 @@
 <section class="flex flex-col gap-4 pb-6 pt-4">
   <header class="flex items-center justify-between gap-3">
     <div class="flex items-center gap-3">
-      <a href="<%= it.backHref %>" data-back class="-ml-2 rounded-full px-2 py-1 text-2xl text-neutral-300 hover:bg-neutral-900" aria-label="Back">&larr;</a>
+      <a href="<%= it.backHref %>" data-back class="flex h-11 w-11 items-center justify-center rounded-xl border border-neutral-600 bg-neutral-800 text-neutral-200 hover:bg-neutral-700" aria-label="Back"><svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></a>
       <h1 class="text-xl font-semibold">Sketch</h1>
     </div>
     <span id="sketch-status" role="status" class="text-xs text-neutral-400"></span>
@@ -21,23 +21,55 @@
     <button type="button" data-tool="free" class="js-tool flex h-11 w-11 items-center justify-center rounded-xl bg-neutral-800 hover:bg-neutral-700" title="Freehand" aria-label="Freehand">
       <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17c3-6 5 4 8-2s4-4 10-1"/></svg>
     </button>
+    <button type="button" data-tool="line" class="js-tool flex h-11 w-11 items-center justify-center rounded-xl bg-neutral-800 hover:bg-neutral-700" title="Line" aria-label="Line">
+      <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 19L19 5"/></svg>
+    </button>
     <button type="button" data-tool="text" class="js-tool flex h-11 w-11 items-center justify-center rounded-xl bg-neutral-800 hover:bg-neutral-700" title="Text" aria-label="Text">
       <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></svg>
     </button>
-    <label class="flex h-11 w-11 items-center justify-center rounded-xl bg-neutral-800 hover:bg-neutral-700 cursor-pointer" title="Color" aria-label="Color">
-      <input id="sketch-color" type="color" value="#ffffff" class="h-7 w-7 cursor-pointer rounded-full border-0 bg-transparent p-0">
+    <label class="flex h-11 w-11 items-center justify-center rounded-xl bg-neutral-800 hover:bg-neutral-700 cursor-pointer" title="Line color" aria-label="Line color">
+      <svg viewBox="0 0 24 24" class="h-6 w-6 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 18h18"/><path d="M7 3.5c-1.4 1.9-2.3 3.3-2.3 4.6a2.3 2.3 0 004.6 0C9.3 6.8 8.4 5.4 7 3.5z" fill="#ef4444" stroke="none"/><path d="M12 3.5c-1.4 1.9-2.3 3.3-2.3 4.6a2.3 2.3 0 004.6 0C14.3 6.8 13.4 5.4 12 3.5z" fill="#22c55e" stroke="none"/><path d="M17 3.5c-1.4 1.9-2.3 3.3-2.3 4.6a2.3 2.3 0 004.6 0C19.3 6.8 18.4 5.4 17 3.5z" fill="#3b82f6" stroke="none"/></svg>
+      <input id="sketch-color" type="color" value="#ffffff" class="sr-only">
     </label>
+    <div id="sketch-width-wrap" class="relative">
+      <button id="sketch-width" type="button" class="flex h-11 w-11 items-center justify-center rounded-xl bg-neutral-800 hover:bg-neutral-700" title="Line width" aria-label="Line width">
+        <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M4 4h16" stroke-width="1.5"/><path d="M4 11.5h16" stroke-width="4"/><path d="M4 19.5h16" stroke-width="7"/></svg>
+      </button>
+      <div id="sketch-width-menu" hidden class="absolute left-0 top-full z-50 mt-1 rounded-xl bg-neutral-900 p-1 shadow-lg ring-1 ring-neutral-700">
+        <!-- No display class on this element: "hidden" must work. The list inside is the flex container. -->
+        <div id="sketch-width-list" class="flex flex-col gap-1"></div>
+      </div>
+    </div>
+    <label class="flex h-11 w-11 items-center justify-center rounded-xl bg-neutral-800 hover:bg-neutral-700 cursor-pointer" title="Fill color" aria-label="Fill color">
+      <svg viewBox="0 0 24 24" class="h-6 w-6 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="13" width="18" height="8" rx="2"/><path d="M7 3.5c-1.4 1.9-2.3 3.3-2.3 4.6a2.3 2.3 0 004.6 0C9.3 6.8 8.4 5.4 7 3.5z" fill="#ef4444" stroke="none"/><path d="M12 3.5c-1.4 1.9-2.3 3.3-2.3 4.6a2.3 2.3 0 004.6 0C14.3 6.8 13.4 5.4 12 3.5z" fill="#22c55e" stroke="none"/><path d="M17 3.5c-1.4 1.9-2.3 3.3-2.3 4.6a2.3 2.3 0 004.6 0C19.3 6.8 18.4 5.4 17 3.5z" fill="#3b82f6" stroke="none"/></svg>
+      <input id="sketch-fill" type="color" value="#7c3aed" class="sr-only">
+    </label>
+    <button id="sketch-fill-none" type="button" class="flex h-11 w-11 items-center justify-center rounded-xl bg-neutral-800 hover:bg-neutral-700" title="No fill" aria-label="No fill">
+      <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M5.6 5.6l12.8 12.8"/></svg>
+    </button>
     <button id="sketch-undo" type="button" disabled class="flex h-11 w-11 items-center justify-center rounded-xl bg-neutral-800 hover:bg-neutral-700 disabled:opacity-40" title="Undo" aria-label="Undo">
       <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg>
     </button>
     <button id="sketch-redo" type="button" disabled class="flex h-11 w-11 items-center justify-center rounded-xl bg-neutral-800 hover:bg-neutral-700 disabled:opacity-40" title="Wiederholen" aria-label="Wiederholen">
       <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 000 12h3"/></svg>
     </button>
+    <button id="sketch-fit" type="button" class="flex h-11 w-11 items-center justify-center rounded-xl bg-neutral-800 hover:bg-neutral-700" title="Zoom to objects / normal view" aria-label="Zoom to objects / normal view">
+      <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+    </button>
     <button id="sketch-delete"type="button" class="flex h-11 w-11 items-center justify-center rounded-xl bg-red-950 text-red-200 hover:bg-red-900" title="Delete" aria-label="Delete">
       <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>
     </button>
   </div>
 
+  <div id="sketch-menu" hidden class="fixed z-50 min-w-40 overflow-hidden rounded-xl bg-neutral-900 text-sm shadow-lg ring-1 ring-neutral-700">
+    <button type="button" data-action="duplicate" class="block w-full whitespace-nowrap px-4 py-3 text-left hover:bg-neutral-800">Duplicate</button>
+    <button type="button" data-action="front" class="block w-full whitespace-nowrap px-4 py-3 text-left hover:bg-neutral-800">Bring to front</button>
+    <button type="button" data-action="back" class="block w-full whitespace-nowrap px-4 py-3 text-left hover:bg-neutral-800">Send to back</button>
+    <button type="button" data-action="delete" class="block w-full whitespace-nowrap px-4 py-3 text-left text-red-300 hover:bg-neutral-800">Delete</button>
+  </div>
+
   <div id="sketch-stage" class="w-full touch-none overflow-hidden rounded-xl bg-neutral-900 ring-1 ring-neutral-700" data-sketch="<%= it.sketch %>" data-save-url="<%= base %>/sketch" data-back-href="<%= it.backHref %>"></div>
+  <select id="sketch-objects" class="w-full rounded-xl bg-neutral-800 px-3 py-2 text-sm text-neutral-100 ring-1 ring-neutral-700"></select>
+  <p id="sketch-size"class="min-h-5 text-center font-mono text-sm text-neutral-400"></p>
 </section>
 <script type="module" src="/static/js/sketch.js"></script>
